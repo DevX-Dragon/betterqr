@@ -1,1 +1,0 @@
-"""Starter Python package."""
