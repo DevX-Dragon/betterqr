@@ -2,3 +2,66 @@
 
 # BetterQR
 The upgraded qrcode library for Python. Features an CLI and normal code support as well!. Comes packed with many features.
+
+## Features
+
+- **Pure Python:** No external QR code generation libraries required.
+- **Highly Customizable:** Make in any shape (square,circle,rounded,diamon.star,gapped,vertical bar,horizontal bar,), colors and background.
+- **Logo Embedding:** Easily embed any logos / image into the center of the QR codes.
+- **Decorative frames and labels:** Add stylish frames and text labels above or below the QR codes.
+- **Animated QR codes:** Generate animated GIFs of the QR codes with effects like shimmer, fade, scan, pulse and more.
+- **Data Types:** Conveniently generate QR codes for WI-FI, vCards, MeCards, Geo-Locations, SMS, Email and Phone Numbers.
+- **CLI Support:** Generate QR codes directly from your terminal.
+- **Multiple Output Formats:** Save QR codes as PNG, JPG, SVG, or GIF (for animations).
+
+## Installation
+BetterQR can be installed directly from PyPi using pip:
+``` bash
+pip install betterqr --upgrade
+```
+
+## Quick Start
+
+### Command Line Interface (CLI)
+Generate a basic QR code:
+``` bash
+betterqr "https://example.com"
+```
+Generate a styled QR code with a logo:
+``` bash
+betterqr "https://mysite.com" --logo logo.png --ecc H --shape circle --fill "#6C3082" --back "#F3E8FF" styled_qr.png
+```
+Generate an animated QR code:
+``` bash
+betterqr "Hello World" animated_qr.gif --effect matrix --fps 12
+```
+
+### Python Library
+``` python
+from betterqr import QR, WiFi, VCard
+
+# Basic QR code
+QR("https://example.com" ).save("qr_basic.png")
+
+# Styled QR code
+QR("https://example.com" ).style(shape="circle", fill="#6C3082").save("qr_styled.png")
+
+# QR code with gradient
+QR("Hello Gradient").gradient("#FF6B6B", "#4ECDC4", direction="radial").save("qr_gradient.png")
+
+# QR code with logo (ensure 'logo.png' exists)
+# For best results with logos, use ECC level H
+QR("https://mysite.com", ecc="H" ).logo("logo.png", ratio=0.3, shape="rounded").save("qr_logo.png")
+
+# Animated QR code
+QR("Animated QR").animate(effect="shimmer", frames=30, fps=20).save("qr_animated.gif")
+
+# Wi-Fi QR code
+QR(WiFi("MyNetwork", "MyPassword", security="WPA")).save("qr_wifi.png")
+
+# vCard QR code
+QR(VCard("Jane Doe", phone="+1-555-1234", email="jane@example.com")).save("qr_vcard.png")
+```
+
+## Doumentation
+For a comprehensive guide on all features please refer to
