@@ -1,5 +1,8 @@
 ![image](https://user-cdn.hackclub-assets.com/019ead43-13b6-784e-a116-e8c0a5fab8f0/image.png)
-
+[![Python Version](https://img.shields.io/badge/python-3.8%2B-blue)](https://www.python.org/)
+[![License](https://img.shields.io/github/license/DevX-Dragon/BetterQR)](https://github.com/DevX-Dragon/BetterQR/main/LICENSE)
+[![PyPI - Version](https://img.shields.io/pypi/v/betterqr)](https://pypi.org/project/betterqr/)
+[![PyPI - Downloads](https://img.shields.io/pypi/dm/betterqr)](https://pypi.org/project/betterqr/)
 # BetterQR
 The upgraded qrcode library for Python. Features an CLI and normal code support as well!. Comes packed with many features.
 
@@ -63,5 +66,5 @@ QR(WiFi("MyNetwork", "MyPassword", security="WPA")).save("qr_wifi.png")
 QR(VCard("Jane Doe", phone="+1-555-1234", email="jane@example.com")).save("qr_vcard.png")
 ```
 
-## Doumentation
-For a comprehensive guide on all features please refer to
+## Doumentations
+Soon!
