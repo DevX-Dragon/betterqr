@@ -4,7 +4,7 @@
 [![PyPI - Version](https://img.shields.io/pypi/v/betterqr)](https://pypi.org/project/betterqr/)
 [![PyPI - Downloads](https://img.shields.io/pypi/dm/betterqr)](https://pypi.org/project/betterqr/)
 # BetterQR
-The upgraded qrcode library for Python. Features an CLI and normal code support as well!. Comes packed with many features.
+BetterQR is a powerful and versatile Python library for generating beautiful, scannable QR codes with zero external QR dependencies. It offers extensive customization options, including various shapes, colors, gradients, embedded logos, frames, labels, and even animated QR codes.
 
 ## Features
 
