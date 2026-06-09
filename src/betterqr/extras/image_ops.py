@@ -1,4 +1,4 @@
-""""I"m"age embedding and frame/overlay utilities for BetterQR.
+""""Image embedding and frame/overlay utilities for BetterQR.
   - Embed any PNG/JPG/SVG into the center of a QR code
   - Add decorative frames/borders around the QR
   - Add text labels below/above the QR

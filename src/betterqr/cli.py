@@ -46,6 +46,7 @@ DATA TYPES
 TERMINAL PREVIEW
   betterqr "Hello" --print
   betterqr "Hello" --print --invert
+Note: Add stuff here as well if you contribute lol
 """
 import argparse
 import sys
