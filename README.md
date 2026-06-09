@@ -1,9 +1,4 @@
-# Python PyPI Starter
+![image](https://cdn.hackclub.com/019ead26-8c58-711a-bd9b-c3dcc19c367f/image.png)
 
-This template gives you a small Python package layout that is ready to expand into a PyPI project.
-
-Files:
-
-- `pyproject.toml`
-- `src/your_package_name/`
-- `tests/`
+# BetterQR
+The upgraded qrcode library for Python. Features an CLI and normal code support as well!. Comes packed with many features.
