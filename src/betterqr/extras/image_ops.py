@@ -7,7 +7,7 @@
 from __future__ import annotations
 import io
 import math
-
+import PIL.Image
 
 _LOGO_ECC_LIMITS = {
     "L": 0.10,
