@@ -3,6 +3,7 @@
 [![License](https://img.shields.io/github/license/DevX-Dragon/BetterQR)](https://github.com/DevX-Dragon/BetterQR/main/LICENSE)
 [![PyPI - Version](https://img.shields.io/pypi/v/betterqr)](https://pypi.org/project/betterqr/)
 [![PyPI - Downloads](https://img.shields.io/pypi/dm/betterqr)](https://pypi.org/project/betterqr/)
+![Hours Spent](https://hackatime.hackclub.com/api/v1/badge/U0A0M7YSS84/devx-dragon/betterqr)
 # BetterQR
 BetterQR is a powerful and versatile Python library for generating beautiful, scannable QR codes with zero external QR dependencies. It offers extensive customization options, including various shapes, colors, gradients, embedded logos, frames, labels, and even animated QR codes.
 
@@ -65,6 +66,10 @@ QR(WiFi("MyNetwork", "MyPassword", security="WPA")).save("qr_wifi.png")
 # vCard QR code
 QR(VCard("Jane Doe", phone="+1-555-1234", email="jane@example.com")).save("qr_vcard.png")
 ```
+## Contributing
 
-## Doumentations
-Soon!
+We welcome contributions! Please see the [CONTRIBUTING.md](CONTRIBUTING.md) file for guidelines on how to contribute to BetterQR.
+
+## License
+
+BetterQR is released under the [MIT License](LICENSE).
