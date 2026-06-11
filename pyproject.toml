@@ -4,11 +4,37 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "betterqr"
-version = "0.1.0"
+description = "The upgraded qrcode library for Python"
+readme = "README.md"
+requires-python = ">=3.10"
+keywords = ["qrcode", "qrcode generator", "animated qrcode", "betterqr", "devx-dragon", "Sri Lanka"]
+version = "1.0.0"
 authors = [{ name = "DevX-Dragon" }]
+license = { file = "LICENSE" }
 dependencies = [
     "pillow>=10.0.0"
 ]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+]
+
+[project.urls]
+Homepage = "https://github.com/DevX-Dragon/BetterQR"
+Issues = "https://github.com/DevX-Dragon/BetterQR/issues"
 
 [project.scripts]
 betterqr = "betterqr.cli:main"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
