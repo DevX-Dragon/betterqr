@@ -7,8 +7,6 @@ on:
 jobs:
   publish:
     name: Upload release to PyPI
-    # Only run if the release tag contains 'pip'
-    if: contains(github.event.release.tag_name, 'pip')
     runs-on: ubuntu-latest
     
     # Crucial for Trusted Publishing (OIDC)
