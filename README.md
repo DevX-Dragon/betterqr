@@ -1,5 +1,5 @@
 ![image](https://user-cdn.hackclub-assets.com/019ead43-13b6-784e-a116-e8c0a5fab8f0/image.png)
-[![Python Version](https://img.shields.io/badge/python-3.8%2B-blue)](https://www.python.org/)
+[![Python Version](https://img.shields.io/badge/python-3.10%2B-blue)](https://www.python.org/)
 [![License](https://img.shields.io/github/license/DevX-Dragon/BetterQR)](https://github.com/DevX-Dragon/BetterQR/main/LICENSE)
 [![PyPI - Version](https://img.shields.io/pypi/v/betterqr)](https://pypi.org/project/betterqr/)
 [![PyPI - Downloads](https://img.shields.io/pypi/dm/betterqr)](https://pypi.org/project/betterqr/)
@@ -10,7 +10,7 @@ BetterQR is a powerful and versatile Python library for generating beautiful, sc
 ## Features
 
 - **Pure Python:** No external QR code generation libraries required.
-- **Highly Customizable:** Make in any shape (square,circle,rounded,diamon.star,gapped,vertical bar,horizontal bar,), colors and background.
+- **Highly Customizable:** Make QR codes in any shape (square, circle, rounded, diamond, star, gapped, vertical bar, horizontal bar), with custom colors and backgrounds.
 - **Logo Embedding:** Easily embed any logos / image into the center of the QR codes.
 - **Decorative frames and labels:** Add stylish frames and text labels above or below the QR codes.
 - **Animated QR codes:** Generate animated GIFs of the QR codes with effects like shimmer, fade, scan, pulse and more.
@@ -19,7 +19,7 @@ BetterQR is a powerful and versatile Python library for generating beautiful, sc
 - **Multiple Output Formats:** Save QR codes as PNG, JPG, SVG, or GIF (for animations).
 
 ## Installation
-BetterQR can be installed directly from PyPi using pip:
+BetterQR can be installed directly from PyPI using pip:
 ``` bash
 pip install betterqr --upgrade
 ```
