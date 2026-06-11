@@ -459,8 +459,8 @@ class QR:
             QR("Hello").save("qr.svg")
             QR("Hello").animate("wave").save("qr.gif")
         """
-        bs = box_size or self._box_size
-        bd = border   or self._border
+        bs = self._box_size if box_size is None else box_size
+        bd = self._border if border is None else border
         ext = filepath.rsplit('.', 1)[-1].lower()
 
         if ext == "gif" and self._anim_effect:
@@ -503,8 +503,8 @@ class QR:
             img.show()
         """
         from PIL import Image
-        bs = box_size or self._box_size
-        bd = border   or self._border
+        bs = self._box_size if box_size is None else box_size
+        bd = self._border if border is None else border
         buf = self._render_static("PNG", bs, bd)
         return Image.open(buf)
 
@@ -617,7 +617,7 @@ class WiFi:
         self._s, self._p, self._sec = ssid, password, security
 
     def __str__(self):
-        sec = self._sec if self._sec else "nopass"
+        sec = self._sec.lower() if self._sec else "nopass"
         return f"WIFI:S:{self._s};T:{sec};P:{self._p};;"
 
 

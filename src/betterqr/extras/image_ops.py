@@ -1,8 +1,9 @@
-""""Image embedding and frame/overlay utilities for BetterQR.
-  - Embed any PNG/JPG/SVG into the center of a QR code
-  - Add decorative frames/borders around the QR
-  - Add text labels below/above the QR
-  - Composite QR onto a background image
+"""Image embedding and frame/overlay utilities for BetterQR.
+
+- Embed any PNG/JPG/SVG into the center of a QR code.
+- Add decorative frames/borders around the QR.
+- Add text labels below/above the QR.
+- Composite QR onto a background image.
 """
 from __future__ import annotations
 import io
@@ -29,8 +30,7 @@ def _logo_ratio_limit(
     version: int | None = None,
     matrix_size: int | None = None,
 ) -> float:
-    """
-" " "  Return a conservative upper bound for logo size.
+    """Return a conservative upper bound for logo size.
 
     The logo is rendered as an occlusion mask over the QR modules, so we cap
     its size based on the error-correction level and version to keep the code
@@ -62,8 +62,7 @@ def embed_image(
     border_color: str | None = None,  # border around logo
     border_width: int = 2,
 ) -> "PIL.Image.Image":
-    """
-" " "  Embed an image (logo) into the center of an already-rendered QR code image.
+    """Embed an image (logo) into the center of an already-rendered QR code image.
 
     The function adds a white (or custom) background behind the logo so the
     underlying QR modules are hidden and the logo is cleanly visible.
@@ -71,7 +70,7 @@ def embed_image(
     Args:
         qr_image:      Pillow Image of the rendered QR code.
         image_path:    File path to the logo (PNG, JPEG, SVG not supported directly).
-        ratio:         Logo width as a fraction of QR total size (0.1 – 0.35).
+        ratio:         Logo width as a fraction of QR total size (0.1 - 0.35).
         shape:         Logo mask shape: 'square', 'circle', or 'rounded'.
         padding:       White padding around the logo in pixels.
         padding_color: Color of the padding background.
@@ -158,8 +157,7 @@ def add_frame(
     label_position: str = "bottom",  # top | bottom
     background_color: str = "#FFFFFF",
 ) -> "PIL.Image.Image":
-    """
-" " "  Add a decorative frame around a rendered QR code.
+    """Add a decorative frame around a rendered QR code.
 
     Args:
         qr_image:         Pillow Image of the QR code.
@@ -266,15 +264,14 @@ def composite_on_background(
     scale: float | None = None,  # scale QR to this fraction of background
     blend_mode: str = "normal",  # normal | multiply
 ) -> "PIL.Image.Image":
-    """
-" " "  Composite the QR code onto a background image.
+    """Composite the QR code onto a background image.
 
     Args:
         qr_image:   Pillow Image of the QR code.
         bg_path:    Path to background image.
         position:   Where to place the QR: 'center', 'top-left', 'top-right',
                     'bottom-left', 'bottom-right'.
-        opacity:    QR code opacity (0.0 – 1.0).
+        opacity:    QR code opacity (0.0 - 1.0).
         scale:      QR size as fraction of background width (e.g. 0.4 = 40%).
         blend_mode: Compositing mode: 'normal' or 'multiply'.
 
@@ -317,7 +314,7 @@ def composite_on_background(
 
 
 def to_bytes(img, format: str = "PNG") -> bytes:
-    """C"o"n"vert a Pillow Image to bytes."""
+    """Convert a Pillow Image to bytes."""
     buf = io.BytesIO()
     fmt = format.upper()
     if fmt in ("JPG", "JPEG"):
