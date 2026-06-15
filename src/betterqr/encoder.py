@@ -4,8 +4,8 @@ Fully compliant with ISO/IEC 18004:2015.
 """
 from __future__ import annotations
 from .tables import (
-    ECC_TABLE, MODE_NUMERIC, MODE_ALPHANUMERIC, MODE_BYTE,
-    ALPHANUMERIC_CHARS
+    ECC_TABLE, MICRO_ECC_TABLE, MODE_NUMERIC, MODE_ALPHANUMERIC, MODE_BYTE,
+    ALPHANUMERIC_CHARS, RMQR_ECC_TABLE
 )
 from .gf import rs_encode
 
@@ -20,16 +20,33 @@ def _best_mode(data: str) -> int:
     return MODE_BYTE
 
 
-def _min_version(data: str, ecc_level: str, mode: int) -> int:
+def _min_version(data: str, ecc_level: str, mode: int, qr_type: str = "standard") -> int:
     """Find the minimum QR version that fits the data."""
     n = len(data.encode('utf-8')) if mode == MODE_BYTE else len(data)
-    for version in range(1, 41):
-        data_cw, _, _ = ECC_TABLE[version][ecc_level]
+    if qr_type == "standard":
+        version_range = range(1, 41)
+        ecc_lookup_table = ECC_TABLE
+    elif qr_type == "micro":
+        version_range = range(1, 5) # Micro QR versions M1-M4
+        ecc_lookup_table = MICRO_ECC_TABLE
+    elif qr_type == "rmqr":
+        version_range = range(1, 2) # Placeholder for rMQR version 1
+        ecc_lookup_table = RMQR_ECC_TABLE
+    else:
+        raise ValueError("Unsupported QR type for _min_version")
+
+    for version in version_range:
+        if version not in ecc_lookup_table or ecc_level not in ecc_lookup_table[version]:
+            continue # Skip if version/ecc_level combination is not defined for micro QR
+        data_cw, _, _ = ecc_lookup_table[version][ecc_level]
         # Available bits
         available_bits = data_cw * 8
         # Required bits: mode indicator + char count + data
         if mode == MODE_NUMERIC:
-            cc_bits = 10 if version <= 9 else (12 if version <= 26 else 14)
+            if qr_type == "rmqr":
+                cc_bits = 8 # Placeholder for rMQR numeric char count bits
+            else:
+                cc_bits = 10 if version <= 9 else (12 if version <= 26 else 14)
             if version <= 9:
                 groups = n // 3
                 rem = n % 3
@@ -44,11 +61,16 @@ def _min_version(data: str, ecc_level: str, mode: int) -> int:
             pairs = n // 2
             data_bits = pairs * 11 + (6 if n % 2 else 0)
             needed = 4 + cc_bits + data_bits
-        else:  # BYTE
+    else:  # BYTE
+        byte_data = data.encode('utf-8')
+        data_bits = len(byte_data) * 8
+        if qr_type == "micro":
+            cc_bits = 4 if version <= 1 else (5 if version <= 2 else (6 if version <= 4 else 0)) # Micro QR char count bits
+        elif qr_type == "rmqr":
+            cc_bits = 7 # Placeholder for rMQR byte char count bits
+        else:
             cc_bits = 8 if version <= 9 else 16
-            byte_data = data.encode('utf-8')
-            data_bits = len(byte_data) * 8
-            needed = 4 + cc_bits + data_bits
+        needed = 4 + cc_bits + data_bits
         if needed <= available_bits:
             return version
     raise ValueError(f"Data too long to encode in any QR version at ECC level {ecc_level}")
@@ -83,7 +105,7 @@ class BitStream:
         return self._bits
 
 
-def encode_data(data: str, ecc_level: str, version: int | None = None) -> tuple[list[int], int, int]:
+def encode_data(data: str, ecc_level: str, version: int | None = None, qr_type: str = "standard") -> tuple[list[int], int, int]:
     """
     Encode data into QR codewords with ECC.
 
@@ -92,9 +114,18 @@ def encode_data(data: str, ecc_level: str, version: int | None = None) -> tuple[
     """
     mode = _best_mode(data)
     if version is None:
-        version = _min_version(data, ecc_level, mode)
+        version = _min_version(data, ecc_level, mode, qr_type=qr_type)
 
-    data_cw_count, block_info, ec_per_block = ECC_TABLE[version][ecc_level]
+    if qr_type == "standard":
+        ecc_lookup_table = ECC_TABLE
+    elif qr_type == "micro":
+        ecc_lookup_table = MICRO_ECC_TABLE
+    elif qr_type == "rmqr":
+        ecc_lookup_table = RMQR_ECC_TABLE
+    else:
+        raise ValueError("Unsupported QR type for encode_data")
+
+    data_cw_count, block_info, ec_per_block = ecc_lookup_table[version][ecc_level]
     total_data_bits = data_cw_count * 8
 
     bs = BitStream()
@@ -105,11 +136,26 @@ def encode_data(data: str, ecc_level: str, version: int | None = None) -> tuple[
     # Character count indicator
     n = len(data.encode('utf-8')) if mode == MODE_BYTE else len(data)
     if mode == MODE_NUMERIC:
-        cc_bits = 10 if version <= 9 else (12 if version <= 26 else 14)
+        if qr_type == "micro":
+            cc_bits = 4 if version == 1 else (5 if version == 2 else (6 if version == 3 else (8 if version == 4 else 0))) # Micro QR char count bits
+        elif qr_type == "rmqr":
+            cc_bits = 8 # Placeholder for rMQR numeric char count bits
+        else:
+            cc_bits = 10 if version <= 9 else (12 if version <= 26 else 14)
     elif mode == MODE_ALPHANUMERIC:
-        cc_bits = 9 if version <= 9 else (11 if version <= 26 else 13)
-    else:
-        cc_bits = 8 if version <= 9 else 16
+        if qr_type == "micro":
+            cc_bits = 3 if version == 1 else (4 if version == 2 else (5 if version == 3 else (6 if version == 4 else 0))) # Micro QR char count bits
+        elif qr_type == "rmqr":
+            cc_bits = 6 # Placeholder for rMQR alphanumeric char count bits
+        else:
+            cc_bits = 9 if version <= 9 else (11 if version <= 26 else 13)
+    else:  # BYTE
+        if qr_type == "micro":
+            cc_bits = 4 if version == 1 else (5 if version == 2 else (6 if version == 3 else (8 if version == 4 else 0))) # Micro QR char count bits
+        elif qr_type == "rmqr":
+            cc_bits = 7 # Placeholder for rMQR byte char count bits
+        else:
+            cc_bits = 8 if version <= 9 else 16
     bs.append(n, cc_bits)
 
     # Data encoding
