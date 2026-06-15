@@ -1,5 +1,4 @@
-"""
-SVG vector renderer for BetterQR.
+""""SVG vector renderer for BetterQR.
 Finder patterns always rendered as squares for scannability.
 """
 from __future__ import annotations
@@ -93,15 +92,18 @@ def render_svg(
         parts.append(f'<rect x="0" y="{offset}" width="{offset}" height="{inner}" fill="{qz}"/>\n')
         parts.append(f'<rect x="{offset+inner}" y="{offset}" width="{offset}" height="{inner}" fill="{qz}"/>\n')
 
-    # Optimized square rendering: merge all into one <path>
-    if module_shape == "square" and not finder_color and not has_gradient:
+    # Optimized rendering: merge all into one <path> for square and gapped modules
+    if (module_shape == "square" or module_shape == "gapped") and not finder_color and not has_gradient:
         d = []
+        gap_px = bs * module_gap if module_shape == "gapped" else 0
+        module_width = bs - 2 * gap_px
+
         for r in range(size):
             for c in range(size):
                 if matrix[r][c]:
-                    x = offset + c * bs
-                    y = offset + r * bs
-                    d.append(f'M{x},{y}h{bs}v{bs}h-{bs}z')
+                    x = offset + c * bs + gap_px
+                    y = offset + r * bs + gap_px
+                    d.append(f'M{x:.2f},{y:.2f}h{module_width:.2f}v{module_width:.2f}h-{module_width:.2f}z')
         if d:
             parts.append(f'<path fill="{module_fill}" d="{" ".join(d)}"/>\n')
     else:
@@ -182,3 +184,5 @@ def render_svg(
     buf.write(''.join(parts).encode('utf-8'))
     buf.seek(0)
     return buf
+
+
