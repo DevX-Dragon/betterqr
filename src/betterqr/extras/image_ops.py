@@ -51,15 +51,15 @@ def _logo_ratio_limit(
 
 
 def embed_image(
-    qr_image,                    # PIL Image (already rendered QR)
-    image_path: str,             # path to logo / image file
-    ratio: float = 0.25,         # logo size as fraction of QR total size
+    qr_image,
+    image_path: str,
+    ratio: float = 0.25,
     ecc_level: str | None = None,
     version: int | None = None,
-    shape: str = "square",       # square | circle | rounded
-    padding: int | None = None,  # white padding around logo in px (auto if None)
+    shape: str = "square",
+    padding: int | None = None,
     padding_color: str = "#FFFFFF",
-    border_color: str | None = None,  # border around logo
+    border_color: str | None = None,
     border_width: int = 2,
 ) -> "PIL.Image.Image":
     """Embed an image (logo) into the center of an already-rendered QR code image.
@@ -95,7 +95,6 @@ def embed_image(
     except Exception as e:
         raise ValueError(f"Cannot open logo image '{image_path}': {e}")
 
-    # Resize maintaining aspect ratio
     logo.thumbnail((logo_px, logo_px), Image.LANCZOS)
     lw, lh = logo.size
 
@@ -107,7 +106,6 @@ def embed_image(
     pad_rgb = _hex_to_rgb(padding_color) + (255,)
     bg = Image.new("RGBA", (bg_w, bg_h), pad_rgb)
 
-    # Create mask for bg shape
     mask = Image.new("L", (bg_w, bg_h), 0)
     md = ImageDraw.Draw(mask)
     if shape == "circle":
@@ -119,15 +117,12 @@ def embed_image(
 
     bg.putalpha(mask)
 
-    # Paste bg onto QR
     qr.paste(bg, (bx, by), bg)
 
-    # Paste logo centered on bg
     lx = bx + padding + (lw - logo.width) // 2
     ly = by + padding + (lh - logo.height) // 2
     qr.paste(logo, (lx, ly), logo)
 
-    # Optional border
     if border_color:
         draw = ImageDraw.Draw(qr)
         bc = _hex_to_rgb(border_color) + (255,)
@@ -147,14 +142,14 @@ def embed_image(
 
 def add_frame(
     qr_image,
-    style: str = "simple",       # simple | rounded | double | shadow | fancy
+    style: str = "simple",
     frame_color: str = "#000000",
     frame_width: int = 8,
     corner_radius: int = 12,
-    label: str | None = None,    # text below QR
+    label: str | None = None,
     label_color: str = "#000000",
     label_size: int = 14,
-    label_position: str = "bottom",  # top | bottom
+    label_position: str = "bottom",
     background_color: str = "#FFFFFF",
 ) -> "PIL.Image.Image":
     """Add a decorative frame around a rendered QR code.
@@ -181,7 +176,6 @@ def add_frame(
     fc = _hex_to_rgb(frame_color) + (255,)
     bg = _hex_to_rgb(background_color) + (255,)
 
-    # Calculate label height
     label_h = 0
     if label:
         label_h = label_size + 16
@@ -193,11 +187,9 @@ def add_frame(
     canvas = Image.new("RGBA", (canvas_w, canvas_h), bg)
     draw = ImageDraw.Draw(canvas)
 
-    # QR position
     qx = pad
     qy = pad if label_position != "top" else pad + label_h
 
-    # Draw frame style
     fx0, fy0 = qx - frame_width, qy - frame_width
     fx1, fy1 = qx + qw + frame_width, qy + qh + frame_width
 
@@ -224,7 +216,6 @@ def add_frame(
         draw.rectangle([fx0, fy0, fx1, fy1], fill=bg[:3] + (255,), outline=fc, width=2)
 
     elif style == "fancy":
-        # Rounded rectangle + corner decorations
         draw.rounded_rectangle([fx0, fy0, fx1, fy1],
                                radius=corner_radius, outline=fc, width=frame_width)
         corner_size = frame_width * 2
@@ -232,17 +223,14 @@ def add_frame(
                        (fx0, fy1 - corner_size), (fx1 - corner_size, fy1 - corner_size)]:
             draw.rectangle([cx, cy, cx + corner_size, cy + corner_size], fill=fc)
 
-    # Paste QR onto canvas
     canvas.paste(qr, (qx, qy), qr)
 
-    # Label
     if label:
         try:
             font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", label_size)
         except Exception:
             font = ImageFont.load_default()
 
-        # Get text size
         bbox = draw.textbbox((0, 0), label, font=font)
         tw, th = bbox[2] - bbox[0], bbox[3] - bbox[1]
         tx = (canvas_w - tw) // 2
@@ -259,10 +247,10 @@ def add_frame(
 def composite_on_background(
     qr_image,
     bg_path: str,
-    position: str = "center",   # center | top-left | top-right | bottom-left | bottom-right
+    position: str = "center",
     opacity: float = 1.0,
-    scale: float | None = None,  # scale QR to this fraction of background
-    blend_mode: str = "normal",  # normal | multiply
+    scale: float | None = None,
+    blend_mode: str = "normal",
 ) -> "PIL.Image.Image":
     """Composite the QR code onto a background image.
 
@@ -291,13 +279,11 @@ def composite_on_background(
         qr = qr.resize((new_size, new_size), Image.LANCZOS)
         qw, qh = qr.size
 
-    # Apply opacity
     if opacity < 1.0:
         r2, g2, b2, a2 = qr.split()
         a2 = a2.point(lambda x: int(x * opacity))
         qr = Image.merge("RGBA", (r2, g2, b2, a2))
 
-    # Position
     margin = 20
     positions = {
         "center":       ((bw - qw) // 2,     (bh - qh) // 2),

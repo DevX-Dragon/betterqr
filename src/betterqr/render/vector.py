@@ -84,7 +84,6 @@ def render_svg(
     if bg != 'none':
         parts.append(f'<rect width="{total_px}" height="{total_px}" fill="{bg}"/>\n')
 
-    # Quiet zone override
     if quiet_zone_color:
         qz = _svg_color(quiet_zone_color)
         inner = size * bs
@@ -151,7 +150,6 @@ def render_svg(
                 else:  # square
                     parts.append(f'<rect x="{x}" y="{y}" width="{bs}" height="{bs}" fill="{color}"/>\n')
 
-    # Logo
     if logo_path:
         try:
             with open(logo_path, 'rb') as f:

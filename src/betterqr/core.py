@@ -77,7 +77,6 @@ class QR:
         self._grad_end     = None
         self._grad_dir     = "diagonal"
 
-        # Logo state
         self._logo_path    = None
         self._logo_ratio   = 0.2
         self._logo_shape   = "square"
@@ -214,8 +213,6 @@ class QR:
         return self
 
     # ──────────────────────────────────────────────────────────────────
-    # Logo & Overlay
-
     def logo(
         self,
         path: str,

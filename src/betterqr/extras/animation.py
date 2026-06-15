@@ -61,7 +61,7 @@ def _make_base_frame(
     matrix, box_size, border,
     fill_rgb, back_rgb,
     module_shape, finder_rgb,
-    highlight_mask=None,  # None means draw all; list[list[float]] = per-module opacity 0..1
+    highlight_mask=None,
 ):
     """Render one frame. highlight_mask controls per-module brightness multiplier."""
     try:
@@ -85,7 +85,6 @@ def _make_base_frame(
             is_f = _is_finder(r, c, size)
             base_color = finder_rgb if is_f else fill_rgb
 
-            # Interpolate between background and module color by t
             color = _lerp_rgb(back_rgb, base_color, max(0.0, min(1.0, t)))
 
             x1 = offset + c*box_size
@@ -109,8 +108,8 @@ def animate(
     back_color: str = "#FFFFFF",
     module_shape: str = "square",
     finder_color: str | None = None,
-    accent_color: str | None = None,   # second color for effects that use two colors
-    loop: int = 0,                     # 0 = loop forever
+    accent_color: str | None = None,
+    loop: int = 0,
 ) -> io.BytesIO:
     """
     Generate an animated GIF of the QR code.
@@ -157,18 +156,14 @@ def animate(
     size = len(matrix)
     frames: list[Image.Image] = []
 
-    # ---------- Effect generators ----------
-
     def masks_shimmer():
         for f in range(n_frames):
-            # Shimmer band sweeps left-to-right
             band_center = (f / n_frames) * (size + 4) - 2
             mask = []
             for r in range(size):
                 row = []
                 for c in range(size):
                     dist = abs(c - band_center)
-                    # Bright highlight near band, normal elsewhere
                     t = max(0.0, 1.0 - dist / 3.0)
                     row.append(1.0 + t * 0.6 if matrix[r][c] else 0.0)
                 mask.append(row)
@@ -177,7 +172,6 @@ def animate(
     def masks_fade():
         for f in range(n_frames):
             t = f / (n_frames - 1)
-            # Ease in-out
             t = t * t * (3 - 2 * t)
             mask = [[t if matrix[r][c] else 0.0 for c in range(size)] for r in range(size)]
             yield mask
@@ -229,10 +223,8 @@ def animate(
             yield mask
 
     def masks_matrix():
-        # Each column has a random "drop" position
         drops = [random.random() * size for _ in range(size)]
         for f in range(n_frames):
-            # Advance drops
             for c in range(size):
                 drops[c] = (drops[c] + random.uniform(0.5, 1.5)) % (size + 5)
             mask = []
@@ -290,7 +282,6 @@ def animate(
                 mask.append(row)
             yield mask
 
-    # Pick generator
     generators = {
         "shimmer":    masks_shimmer,
         "fade":       masks_fade,
@@ -305,7 +296,6 @@ def animate(
 
     gen_fn = generators.get(effect, masks_shimmer)
 
-    # ---------- For color-rotation effects ----------
     def get_frame_colors(f):
         """For 'rotate' effect, shift hue each frame."""
         if effect == "rotate":

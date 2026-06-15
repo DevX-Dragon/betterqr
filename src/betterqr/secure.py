@@ -30,10 +30,9 @@ class SecureQR:
 
         parts = signed_payload.rsplit(".", 1)
         if len(parts) != 2:
-            return False # Invalid format
+            return False
 
         payload, signature = parts
-        # Re-sign the payload to get the expected signature
         h = hmac.new(self._secret_key, payload.encode('utf-8'), hashlib.sha256)
         expected_signature = base64.urlsafe_b64encode(h.digest()).decode('utf-8').rstrip('=')
 
@@ -63,7 +62,6 @@ class SecureQR:
         if not obfuscated_payload or not isinstance(obfuscated_payload, str):
             raise ValueError("Obfuscated payload must be a non-empty string.")
 
-        # Add padding back if it was removed by rstrip('=')
         padding_needed = 4 - (len(obfuscated_payload) % 4)
         if padding_needed != 4:
             obfuscated_payload += '=' * padding_needed
@@ -71,7 +69,7 @@ class SecureQR:
         try:
             obfuscated_bytes = base64.urlsafe_b64decode(obfuscated_payload.encode('utf-8'))
         except Exception:
-            return "" # Invalid base64
+            return ""
 
         key_hash = hashlib.sha256(self._secret_key).digest()
         deobfuscated_bytes = bytearray(len(obfuscated_bytes))
@@ -81,7 +79,6 @@ class SecureQR:
 
         return deobfuscated_bytes.decode('utf-8')
 
-# Helper functions for backward compatibility or easier access
 def sign_payload(payload: str, secret_key: str) -> str:
     return SecureQR(secret_key).sign_payload(payload)
 

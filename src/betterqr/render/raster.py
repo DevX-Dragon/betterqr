@@ -73,7 +73,6 @@ def render_png(
     grad_rgb = _hex_to_rgb(gradient_color) if gradient_color else None
     finder_rgb = _hex_to_rgb(finder_color) if finder_color else fill_rgb
 
-    # Quiet zone override
     if quiet_zone_color and not _is_transparent(quiet_zone_color):
         qz_rgb = _hex_to_rgb(quiet_zone_color) + (255,)
         draw.rectangle([0, 0, total_px, total_px], fill=qz_rgb)
@@ -109,7 +108,6 @@ def render_png(
             x2 = x1 + box_size - 1
             y2 = y1 + box_size - 1
 
-            # Finders & separators always render as clean squares
             is_f = _is_finder(r, c, size)
             shape = "square" if is_f else module_shape
 
@@ -150,7 +148,6 @@ def render_png(
             else:  # square
                 draw.rectangle([x1, y1, x2 + 1, y2 + 1], fill=color)
 
-    # Logo
     if logo_path:
         try:
             logo = Image.open(logo_path).convert("RGBA")
