@@ -1,4 +1,5 @@
-""""SVG vector renderer for BetterQR.
+"""
+SVG vector renderer for BetterQR.
 Finder patterns always rendered as squares for scannability.
 """
 from __future__ import annotations
@@ -184,5 +185,3 @@ def render_svg(
     buf.write(''.join(parts).encode('utf-8'))
     buf.seek(0)
     return buf
-
-
