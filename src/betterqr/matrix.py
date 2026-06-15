@@ -3,7 +3,10 @@ QR Code matrix construction: all function patterns, data placement, masking.
 Fully compliant with ISO/IEC 18004:2015.
 """
 from __future__ import annotations
-from .tables import ALIGNMENT_POSITIONS, FORMAT_INFO, VERSION_INFO, ECC_BITS
+from .tables import (
+    ALIGNMENT_POSITIONS, FORMAT_INFO, VERSION_INFO, ECC_BITS,
+    MICRO_ECC_TABLE, MICRO_ALIGNMENT_POSITIONS, MICRO_FORMAT_INFO, MICRO_VERSION_INFO
+)
 
 
 # Mask pattern conditions
@@ -159,6 +162,26 @@ def _write_format_info(grid, ecc_level: str, mask_pattern: int, size: int):
         write_bit(size - 7 + i, 8, 8 + i)
 
 
+def _write_micro_format_info(grid, ecc_level: str, mask_pattern: int, version: int, size: int):
+    """Write Micro QR format information (12 bits)."""
+    fmt = MICRO_FORMAT_INFO[(ecc_level, mask_pattern)]
+
+    def write_bit(r, c, bit_idx):
+        bit = (fmt >> (11 - bit_idx)) & 1
+        grid[r][c] = bit
+
+    # Micro QR format info is placed in two areas
+    # Area 1: 8 bits along column 8, rows 0-7
+    for i in range(8):
+        write_bit(i, 8, i)
+
+    # Area 2: 4 bits along row 8, columns 0-3
+    for i in range(4):
+        write_bit(8, i, 8 + i)
+
+    # Micro QR version info (2 bits for M1-M4) is part of format info
+    # This is simplified as the MICRO_FORMAT_INFO already includes it.
+
 def _write_version_info(grid, version: int, size: int):
     """Write version information blocks for versions 7+."""
     if version < 7:
@@ -267,59 +290,140 @@ def _penalty_score(grid) -> int:
     return score
 
 
-def build_matrix(codewords: list[int], version: int, ecc_level: str) -> list[list[int]]:
+def build_matrix(codewords: list[int], version: int, ecc_level: str, qr_type: str = "standard", logo_info: dict | None = None) -> list[list[int]]:
     """
     Build the final QR code matrix with the best mask pattern applied.
     Returns a 2D list of 0 (light) and 1 (dark).
     """
-    size = version * 4 + 17
+    if qr_type == "standard":
+        size = version * 4 + 17
+    elif qr_type == "micro":
+        size = version * 2 + 9 # M1: 11, M2: 13, M3: 15, M4: 17
+    elif qr_type == "rmqr":
+        # rMQR sizes are more complex, for now, let's assume a simple mapping or fixed size for basic structuring
+        # This will need to be expanded with actual rMQR version definitions.
+        # For demonstration, let's use a placeholder size, e.g., based on a specific rMQR version.
+        # A common rMQR is 15x27 (R7x43, M version 1, size 15x27)
+        # For now, let's use a simplified size based on version for illustration.
+        # Actual rMQR versions are defined by their module count (e.g., R7x43 means 7 rows, 43 columns)
+        # For the sake of adding basic structuring, let's define a placeholder size.
+        # This will need proper tables for rMQR versions later.
+        if version == 1: # Example for a small rMQR
+            size = (15, 27) # rows, columns
+        else:
+            raise ValueError("Unsupported rMQR version for basic structuring")
+    else:
+        raise ValueError("Unsupported QR type")
 
     # --- Place all function patterns ---
     grid = _make_grid(size)
     reserved = [[False] * size for _ in range(size)]
 
-    # Finder patterns
-    _place_finder(grid, 0, 0)        # top-left
-    _place_finder(grid, 0, size-7)   # top-right
-    _place_finder(grid, size-7, 0)   # bottom-left
+    if qr_type == "standard":
+        # Finder patterns
+        _place_finder(grid, 0, 0)        # top-left
+        _place_finder(grid, 0, size-7)   # top-right
+        _place_finder(grid, size-7, 0)   # bottom-left
 
-    # Mark finder + separator areas as reserved
-    for r in range(9):
-        for c in range(9):
-            reserved[r][c] = True
-    for r in range(9):
-        for c in range(size-8, size):
-            reserved[r][c] = True
-    for r in range(size-8, size):
-        for c in range(9):
-            reserved[r][c] = True
+        # Mark finder + separator areas as reserved
+        for r in range(9):
+            for c in range(9):
+                reserved[r][c] = True
+        for r in range(9):
+            for c in range(size-8, size):
+                reserved[r][c] = True
+        for r in range(size-8, size):
+            for c in range(9):
+                reserved[r][c] = True
 
-    _place_separators(grid, size)
-    _place_alignment(grid, version)
+        _place_separators(grid, size)
+        _place_alignment(grid, version)
 
-    # Mark alignment pattern areas as reserved
-    positions = ALIGNMENT_POSITIONS[version]
-    if positions:
-        for row in positions:
-            for col in positions:
-                if row <= 8 and col <= 8: continue
-                if row <= 8 and col >= size - 9: continue
-                if row >= size - 9 and col <= 8: continue
-                for dr in range(-2, 3):
-                    for dc in range(-2, 3):
-                        reserved[row+dr][col+dc] = True
+        # Mark alignment pattern areas as reserved
+        positions = ALIGNMENT_POSITIONS[version]
+        if positions:
+            for row in positions:
+                for col in positions:
+                    if row <= 8 and col <= 8: continue
+                    if row <= 8 and col >= size - 9: continue
+                    if row >= size - 9 and col <= 8: continue
+                    for dr in range(-2, 3):
+                        for dc in range(-2, 3):
+                            reserved[row+dr][col+dc] = True
 
-    _place_timing(grid, size)
-    # Mark timing as reserved
-    for i in range(size):
-        reserved[6][i] = True
-        reserved[i][6] = True
+        _place_timing(grid, size)
+        # Mark timing as reserved
+        for i in range(size):
+            reserved[6][i] = True
+            reserved[i][6] = True
 
-    _place_dark_module(grid, version)
-    reserved[4*version+9][8] = True
+        _place_dark_module(grid, version)
+        reserved[4*version+9][8] = True
 
-    _reserve_format_areas(reserved, size)
-    _reserve_version_areas(reserved, size, version)
+        _reserve_format_areas(reserved, size)
+        _reserve_version_areas(reserved, size, version)
+    elif qr_type == "micro":
+        # Micro QR only has one finder pattern (top-left)
+        _place_finder(grid, 0, 0)
+
+        # Mark finder + separator areas as reserved
+        for r in range(9):
+            for c in range(9):
+                reserved[r][c] = True
+
+        # Micro QR timing pattern (only horizontal for M1-M4)
+        for i in range(8, size - 8):
+            val = _DARK if i % 2 == 0 else _LIGHT
+            if grid[6][i] == _UNSET:
+                grid[6][i] = val
+        for i in range(size):
+            reserved[6][i] = True
+
+        # Micro QR dark module (fixed position)
+        grid[size - 2][1] = _DARK
+        reserved[size - 2][1] = True
+
+        # Micro QR format information area
+        for i in range(8):
+            reserved[8][i] = True
+        for i in range(7):
+            reserved[i][8] = True
+    elif qr_type == "rmqr":
+        # rMQR has a different structure. For basic structuring, we'll place a single finder-like pattern
+        # at the top-left and a timing pattern along the top and left edges.
+        # This is a highly simplified representation and would need detailed rMQR specs for full implementation.
+        rows, cols = size
+        _place_finder(grid, 0, 0) # Top-left finder
+
+        # Mark finder area as reserved
+        for r in range(9):
+            for c in range(9):
+                if r < rows and c < cols:
+                    reserved[r][c] = True
+
+        # Timing patterns (simplified for rMQR - usually more complex)
+        for i in range(8, cols - 8):
+            if i < cols:
+                grid[6][i] = _DARK if i % 2 == 0 else _LIGHT
+                reserved[6][i] = True
+        for i in range(8, rows - 8):
+            if i < rows:
+                grid[i][6] = _DARK if i % 2 == 0 else _LIGHT
+                reserved[i][6] = True
+
+        # Dark module (simplified, actual position depends on rMQR version)
+        if rows > 1 and cols > 1:
+            grid[rows - 2][1] = _DARK
+            reserved[rows - 2][1] = True
+
+        # Format information area (simplified)
+        for i in range(8):
+            if i < cols:
+                reserved[8][i] = True
+            if i < rows:
+                reserved[i][8] = True
+
+
 
     # --- Place data bits ---
     bits = []
@@ -331,15 +435,61 @@ def build_matrix(codewords: list[int], version: int, ecc_level: str) -> list[lis
     for idx, (r, c) in enumerate(placement):
         grid[r][c] = bits[idx] if idx < len(bits) else 0
 
+    # Smart Logo Masking: Clear modules under the logo
+    if logo_info:
+        logo_size_px = logo_info["size_px"]
+        logo_padding_px = logo_info["padding_px"]
+        box_size = logo_info["box_size"]
+        border = logo_info["border"]
+
+        # Calculate logo area in terms of QR modules
+        # The logo is centered, so we need to find its top-left module coordinate
+        qr_total_size_px = size * box_size + 2 * border * box_size
+        logo_start_px = (qr_total_size_px - logo_size_px) / 2
+        logo_end_px = (qr_total_size_px + logo_size_px) / 2
+
+        # Convert pixel coordinates to module coordinates
+        # Adjust for the quiet zone border
+        logo_start_module_r = int((logo_start_px - border * box_size) / box_size)
+        logo_end_module_r = int((logo_end_px - border * box_size) / box_size)
+        logo_start_module_c = int((logo_start_px - border * box_size) / box_size)
+        logo_end_module_c = int((logo_end_px - border * box_size) / box_size)
+
+        # Apply padding in modules
+        padding_modules = int(logo_padding_px / box_size) if box_size > 0 else 0
+        logo_start_module_r -= padding_modules
+        logo_end_module_r += padding_modules
+        logo_start_module_c -= padding_modules
+        logo_end_module_c += padding_modules
+
+        # Ensure coordinates are within grid bounds
+        logo_start_module_r = max(0, logo_start_module_r)
+        logo_end_module_r = min(size, logo_end_module_r)
+        logo_start_module_c = max(0, logo_start_module_c)
+        logo_end_module_c = min(size, logo_end_module_c)
+
+        for r in range(logo_start_module_r, logo_end_module_r):
+            for c in range(logo_start_module_c, logo_end_module_c):
+                grid[r][c] = _LIGHT # Clear the modules under the logo
+                reserved[r][c] = True # Mark as reserved so masking doesn't affect it
+
     # --- Evaluate all 8 masks, pick best ---
     best_score = float('inf')
     best_mask = 0
     best_grid = None
 
-    for mask_pattern in range(8):
+    num_masks = 8 if qr_type == "standard" else 4
+    for mask_pattern in range(num_masks):
         masked = _apply_mask(grid, mask_pattern, reserved)
-        _write_format_info(masked, ecc_level, mask_pattern, size)
-        _write_version_info(masked, version, size)
+        if qr_type == "standard":
+            _write_format_info(masked, ecc_level, mask_pattern, size)
+            _write_version_info(masked, version, size)
+        elif qr_type == "micro":
+            _write_micro_format_info(masked, ecc_level, mask_pattern, version, size)
+        elif qr_type == "rmqr":
+            # rMQR format info placement is also specific and would need a dedicated function
+            # For now, we'll skip writing format info for rMQR to avoid errors, as it's complex.
+            pass
         score = _penalty_score(masked)
         if score < best_score:
             best_score = score

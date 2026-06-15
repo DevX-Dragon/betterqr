@@ -145,3 +145,98 @@ MODE_TERMINATOR  = 0b0000
 
 # ECC level indicators (bits in format info)
 ECC_BITS = {'L': 0b01, 'M': 0b00, 'Q': 0b11, 'H': 0b10}
+
+# ---------------------------------------------------------------------------
+# Micro QR Code specific tables
+# ---------------------------------------------------------------------------
+
+MICRO_ECC_TABLE = {
+    1:  {'L': (3, [(1,3)], 5)}, # M1
+    2:  {'L': (5, [(1,5)], 7), 'M': (5, [(1,5)], 7)}, # M2
+    3:  {'L': (8, [(1,8)], 10), 'M': (6, [(1,6)], 12)}, # M3
+    4:  {'L': (12, [(1,12)], 12), 'M': (9, [(1,9)], 15), 'Q': (7, [(1,7)], 17)}, # M4
+}
+
+MICRO_ALIGNMENT_POSITIONS = {
+    1:  [],
+    2:  [],
+    3:  [],
+    4:  [],
+}
+
+MICRO_FORMAT_INFO = {
+    # (ecc_level, mask_pattern) -> 12-bit format info
+    # M1
+    ('L', 0): 0b100010011000,
+    ('L', 1): 0b100001010111,
+    ('L', 2): 0b100110100010,
+    ('L', 3): 0b100101101101,
+    # M2
+    ('L', 0): 0b101010111100,
+    ('L', 1): 0b101001110011,
+    ('L', 2): 0b101110000110,
+    ('L', 3): 0b101101001001,
+    ('M', 0): 0b101010111100,
+    ('M', 1): 0b101001110011,
+    ('M', 2): 0b101110000110,
+    ('M', 3): 0b101101001001,
+    # M3
+    ('L', 0): 0b110011010000,
+    ('L', 1): 0b110000011111,
+    ('L', 2): 0b110111101010,
+    ('L', 3): 0b110100100101,
+    ('M', 0): 0b110011010000,
+    ('M', 1): 0b110000011111,
+    ('M', 2): 0b110111101010,
+    ('M', 3): 0b110100100101,
+    # M4
+    ('L', 0): 0b111011100000,
+    ('L', 1): 0b111000101111,
+    ('L', 2): 0b111111011010,
+    ('L', 3): 0b111100010101,
+    ('M', 0): 0b111011100000,
+    ('M', 1): 0b111000101111,
+    ('M', 2): 0b111111011010,
+    ('M', 3): 0b111100010101,
+    ('Q', 0): 0b111011100000,
+    ('Q', 1): 0b111000101111,
+    ('Q', 2): 0b111111011010,
+    ('Q', 3): 0b111100010101,
+}
+
+# Micro QR Version information (not used for M1-M4, but kept for consistency)
+MICRO_VERSION_INFO = {
+    1: 0b00,
+    2: 0b01,
+    3: 0b10,
+    4: 0b11,
+}
+
+# Micro QR ECC level indicators (bits in format info)
+MICRO_ECC_BITS = {'L': 0b00, 'M': 0b01, 'Q': 0b10}
+
+# ---------------------------------------------------------------------------
+# rMQR Code specific tables (Placeholders - actual specs are complex)
+# ---------------------------------------------------------------------------
+
+RMQR_ECC_TABLE = {
+    # Example for a small rMQR (R7x43, M version 1)
+    1:  {'M': (30, [(1,30)], 10)}, # Placeholder for rMQR version 1, ECC M
+}
+
+RMQR_ALIGNMENT_POSITIONS = {
+    1:  [], # rMQR has different alignment patterns
+}
+
+RMQR_FORMAT_INFO = {
+    # Placeholder for rMQR format information
+    ('M', 0): 0b000000000000000, # Example 15-bit format info
+}
+
+RMQR_VERSION_INFO = {
+    1: 0b000000000000000000, # Example 18-bit version info
+}
+
+RMQR_ECC_BITS = {
+    'M': 0b00, # Placeholder
+}
