@@ -26,7 +26,7 @@ jobs:
 
     - name: Run tests and generate report
       run: |
-        pytest --json-report --json-report-file=report.json tests/test_cli.py
+        pytest --json-report --json-report-file=report.json src/betterqr/tests/test_cli.py
 
     - name: Upload test artifacts (generated images)
       uses: actions/upload-artifact@v4
