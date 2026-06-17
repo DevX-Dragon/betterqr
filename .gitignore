@@ -3,3 +3,4 @@ __pycache__/
 .env
 betterqr.egg-info
 dist/
+tempfile.txts
