@@ -10,8 +10,12 @@ def send_to_discord(webhook_url, report_path, image_dir="."):
         print(f"Report file {report_path} not found.")
         return
 
-    with open(report_path, 'r') as f:
-        data = json.load(f)
+    try:
+        with open(report_path, 'r') as f:
+            data = json.load(f)
+    except Exception as e:
+        print(f"Error reading report file: {e}")
+        return
 
     stats = data.get('summary', {})
     total = stats.get('total', 0)
@@ -22,7 +26,7 @@ def send_to_discord(webhook_url, report_path, image_dir="."):
     color = 0x2ecc71 if failed == 0 else 0xe74c3c
 
     embed = {
-        "title": "� BetterQR CI/CD Report",
+        "title": "🚀 BetterQR CI/CD Report",
         "description": f"Automated test execution and verification for **BetterQR**.",
         "color": color,
         "fields": [
@@ -34,12 +38,11 @@ def send_to_discord(webhook_url, report_path, image_dir="."):
         "timestamp": datetime.utcnow().isoformat()
     }
 
-    # Collect generated images
-    images = glob.glob(os.path.join(image_dir, "test_*.png"))
+    # Collect generated images - search in the current directory
+    images = glob.glob("test_*.png")
     files = {}
     
     # Discord allows up to 10 files per message
-    # We'll attach the first 10 images
     for i, img_path in enumerate(images[:10]):
         filename = os.path.basename(img_path)
         files[f"file{i}"] = (filename, open(img_path, 'rb'), 'image/png')

@@ -21,7 +21,7 @@ jobs:
     - name: Install Python dependencies
       run: |
         pip install --upgrade pip
-        pip install -e .  # Install BetterQR in editable mode
+        pip install -e .
         pip install pytest pytest-json-report requests pyzbar Pillow
 
     - name: Run tests and generate report
@@ -38,6 +38,6 @@ jobs:
 
     - name: Send Discord Notification
       if: always()
-      run: python report_to_discord.py ${{ secrets.DISCORD_WEBHOOK_URL }} report.json
+      run: python src/betterqr/report_to_discord.py ${{ secrets.DISCORD_WEBHOOK_URL }} report.json
       env:
         DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
