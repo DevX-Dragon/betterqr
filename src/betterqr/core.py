@@ -60,6 +60,10 @@ class QR:
         if ecc not in ECC_LEVELS:
             raise ValueError(f"ecc must be one of {ECC_LEVELS}")
 
+        # Micro QR ECC validation
+        if qr_type == "micro" and ecc not in ('L', 'M', 'Q'):
+            raise ValueError("Micro QR only supports ECC levels L, M, Q (not H)")
+
         self._raw     = str(data)
         self._ecc     = ecc
         self._version_hint = version
@@ -481,6 +485,7 @@ class QR:
         mode_names = {1: 'numeric', 2: 'alphanumeric', 4: 'byte', 8: 'kanji'}
         return {
             'data':         self._raw[:60] + ('...' if len(self._raw) > 60 else ''),
+            'type':         self._qr_type,
             'version':      self._version,
             'ecc':          self._ecc,
             'mode':         mode_names.get(self._mode, 'byte'),
@@ -488,12 +493,146 @@ class QR:
             'data_length':  len(self._raw),
         }
 
+    @property
+    def version_label(self) -> str:
+        """Human-readable version label (e.g. 'v7', 'M2' for micro)."""
+        if self._qr_type == "micro":
+            return f"M{self._version}"
+        return f"v{self._version}"
+
+    @property
+    def qr_type(self) -> str:
+        return self._qr_type
+
     def __repr__(self) -> str:
         d = self._raw[:30]
+        type_tag = f" [{self._qr_type}]" if self._qr_type != "standard" else ""
         return (f"<QR v{self._version} {self._ecc} {self.module_count}×{self.module_count}"
-                f" {d!r}{'...' if len(self._raw)>30 else ''}>")
+                f"{type_tag} {d!r}{'...' if len(self._raw)>30 else ''}>")
 
 # ──────────────────────────────────────────────────────────────────────────
 # Data helpers
 # ──────────────────────────────────────────────────────────────────────────
 
+class WiFi:
+    def __init__(self, ssid: str, password: str = "", security: str = "WPA"):
+        if not ssid: raise ValueError("SSID cannot be empty")
+        security = security.upper()
+        if security not in ("WPA", "WEP", "NOPASS", ""): security = "WPA"
+        self._s, self._p, self._sec = ssid, password, security
+
+    def __str__(self):
+        sec = self._sec.lower() if self._sec else "nopass"
+        return f"WIFI:S:{self._s};T:{sec};P:{self._p};;"
+
+class VCard:
+    def __init__(self, name: str, org: str = "", phone: str = "",
+                 email: str = "", url: str = "", address: str = "", note: str = ""):
+        if not name: raise ValueError("name is required")
+        self.name, self.org, self.phone = name, org, phone
+        self.email, self.url, self.address, self.note = email, url, address, note
+
+    def __str__(self):
+        lines = ["BEGIN:VCARD", "VERSION:3.0", f"FN:{self.name}", f"N:{self.name};;;;"]
+        if self.org:     lines.append(f"ORG:{self.org}")
+        if self.phone:   lines.append(f"TEL:{self.phone}")
+        if self.email:   lines.append(f"EMAIL:{self.email}")
+        if self.url:     lines.append(f"URL:{self.url}")
+        if self.address: lines.append(f"ADR:{self.address}")
+        if self.note:    lines.append(f"NOTE:{self.note}")
+        lines.append("END:VCARD")
+        return "\n".join(lines)
+
+class MeCard:
+    def __init__(self, name: str, phone: str = "", email: str = "",
+                 url: str = "", birthday: str = "", note: str = ""):
+        if not name: raise ValueError("name is required")
+        self.name, self.phone, self.email = name, phone, email
+        self.url, self.birthday, self.note = url, birthday, note
+
+    def __str__(self):
+        parts = [f"N:{self.name}"]
+        if self.phone:    parts.append(f"TEL:{self.phone}")
+        if self.email:    parts.append(f"EMAIL:{self.email}")
+        if self.url:      parts.append(f"URL:{self.url}")
+        if self.birthday: parts.append(f"BDAY:{self.birthday}")
+        if self.note:     parts.append(f"MEMO:{self.note}")
+        return "MECARD:" + ";".join(parts) + ";;"
+
+class GeoLocation:
+    def __init__(self, lat: float, lon: float, altitude: float | None = None):
+        self.lat, self.lon, self.alt = lat, lon, altitude
+
+    def __str__(self):
+        s = f"geo:{self.lat},{self.lon}"
+        if self.alt is not None: s += f",{self.alt}"
+        return s
+
+class Event:
+    def __init__(self, summary: str, dtstart: str, dtend: str,
+                 location: str = "", description: str = ""):
+        self.summary, self.dtstart, self.dtend = summary, dtstart, dtend
+        self.location, self.description = location, description
+
+    def __str__(self):
+        lines = ["BEGIN:VCALENDAR", "VERSION:2.0", "BEGIN:VEVENT",
+                 f"SUMMARY:{self.summary}", f"DTSTART:{self.dtstart}", f"DTEND:{self.dtend}"]
+        if self.location:    lines.append(f"LOCATION:{self.location}")
+        if self.description: lines.append(f"DESCRIPTION:{self.description}")
+        lines += ["END:VEVENT", "END:VCALENDAR"]
+        return "\n".join(lines)
+
+class SMS:
+    def __init__(self, phone: str, body: str = ""):
+        self.phone, self.body = phone, body
+
+    def __str__(self):
+        return f"smsto:{self.phone}:{self.body}" if self.body else f"sms:{self.phone}"
+
+class Email:
+    def __init__(self, address: str, subject: str = "", body: str = ""):
+        self.address, self.subject, self.body = address, subject, body
+
+    def __str__(self):
+        params = []
+        if self.subject: params.append(f"subject={self.subject}")
+        if self.body:    params.append(f"body={self.body}")
+        base = f"mailto:{self.address}"
+        return base + ("?" + "&".join(params) if params else "")
+
+class Phone:
+    def __init__(self, number: str):
+        self.number = number
+
+    def __str__(self):
+        return f"tel:{self.number}"
+
+class Crypto:
+    def __init__(self, coin: str, address: str, amount: float | None = None,
+                 label: str = "", message: str = ""):
+        self.coin, self.address, self.amount = coin.lower(), address, amount
+        self.label, self.message = label, message
+
+    def __str__(self):
+        params = []
+        if self.amount is not None: params.append(f"amount={self.amount}")
+        if self.label:              params.append(f"label={self.label}")
+        if self.message:            params.append(f"message={self.message}")
+        base = f"{self.coin}:{self.address}"
+        return base + ("?" + "&".join(params) if params else "")
+
+def batch(items: list, output_dir: str = ".", prefix: str = "qr", **style_kwargs) -> list[QR]:
+    import os
+    os.makedirs(output_dir, exist_ok=True)
+    results = []
+    for i, item in enumerate(items):
+        if isinstance(item, tuple):
+            data, filename = item
+        else:
+            data, filename = item, f"{prefix}_{i}.png"
+        qr = QR(data)
+        if style_kwargs:
+            qr.style(**style_kwargs)
+        qr.save(os.path.join(output_dir, filename))
+        results.append(qr)
+    return results

@@ -1,5 +1,4 @@
-"""
-betterqr CLI
+""""betterqr CLI
 ============
 The cleanest QR code generator in your terminal.
 
@@ -7,6 +6,11 @@ Basic usage:
   betterqr "https://example.com" -> qr.png
   betterqr "Hello World" out.png
   betterqr "https://example.com" out.svg
+
+Micro QR (compact, for small labels):
+  betterqr "HELLO" --type micro
+  betterqr "12345" --type micro -e L
+  betterqr "ABC" --type micro out.png --info
 
 Shapes:
   betterqr "text" -s circle
@@ -53,7 +57,7 @@ import sys
 
 
 def _color(value: str) -> str:
-    """Validate a color argument."""
+    """V"a"l"idate a color argument."""
     if value.lower() == "transparent":
         return value
     if not value.startswith("#"):
@@ -85,19 +89,26 @@ def main() -> None:
 
     qr_group = parser.add_argument_group("QR settings")
     qr_group.add_argument(
+        "--type",
+        default="standard",
+        choices=["standard", "micro"],
+        metavar="TYPE",
+        help="QR code type: standard (v1-40) or micro (M1-M4) [default: standard]",
+    )
+    qr_group.add_argument(
         "-e",
         "--ecc",
         default="M",
         choices=["L", "M", "Q", "H"],
         metavar="L|M|Q|H",
-        help="Error correction: L=7%% M=15%% Q=25%% H=30%% [default: M]. Use H with logos.",
+        help="Error correction: L=7%% M=15%% Q=25%% H=30%% [default: M]. Use H with logos. Micro QR supports L/M/Q only.",
     )
     qr_group.add_argument(
         "-v",
         "--version",
         type=int,
         metavar="1-40",
-        help="Force QR version 1-40 (auto-selected by default)",
+        help="Force QR version (1-40 for standard, 1-4 for micro M1-M4; auto-selected by default)",
     )
     qr_group.add_argument("--box-size", type=int, default=10, metavar="PX", help="Pixels per module [default: 10]")
     qr_group.add_argument("--border", type=int, default=4, metavar="N", help="Quiet zone width in modules [default: 4]")
@@ -218,7 +229,7 @@ def main() -> None:
         sys.exit(1)
 
     try:
-        qr = QR(data, ecc=args.ecc, version=args.version)
+        qr = QR(data, ecc=args.ecc, version=args.version, qr_type=args.type)
     except ValueError as error:
         print(f"✗ Error: {error}", file=sys.stderr)
         sys.exit(1)
@@ -282,7 +293,7 @@ def main() -> None:
             qr.save(args.output)
             print(
                 f"✓ Saved {args.output}  "
-                f"[v{qr.version} ECC-{qr.ecc_level}  {qr.module_count}×{qr.module_count} modules]"
+                f"[{qr.version_label} ECC-{qr.ecc_level}  {qr.module_count}×{qr.module_count} modules]"
             )
         except Exception as error:
             print(f"✗ Failed to save: {error}", file=sys.stderr)
