@@ -1,0 +1,43 @@
+name: BetterQR CI/CD
+
+on: [push, pull_request]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.x'
+
+    - name: Install system dependencies for pyzbar
+      run: sudo apt-get update && sudo apt-get install -y libzbar0
+
+    - name: Install Python dependencies
+      run: |
+        pip install --upgrade pip
+        pip install -e .  # Install BetterQR in editable mode
+        pip install pytest pytest-json-report requests pyzbar Pillow
+
+    - name: Run tests and generate report
+      run: |
+        pytest --json-report --json-report-file=report.json tests/test_cli.py
+
+    - name: Upload test artifacts (generated images)
+      uses: actions/upload-artifact@v4
+      with:
+        name: generated-qrcodes
+        path: | 
+          test_*.png
+          dummy_logo.png
+
+    - name: Send Discord Notification
+      if: always()
+      run: python report_to_discord.py ${{ secrets.DISCORD_WEBHOOK_URL }} report.json
+      env:
+        DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
