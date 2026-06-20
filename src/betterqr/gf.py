@@ -69,6 +69,6 @@ def rs_encode(data: list, n_ec_codewords: int) -> list:
     """Return the EC codewords for data using Reed-Solomon."""
     gen = generator_polynomial(n_ec_codewords)
     # Pad data with zeros to make room for EC
-    padded = data + [0] * n_ec_codewords
+    padded = list(data) + [0] * n_ec_codewords
     remainder = gf_poly_div(padded, gen)
     return remainder
