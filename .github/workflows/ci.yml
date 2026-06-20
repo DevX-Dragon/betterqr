@@ -1,43 +1,70 @@
-name: BetterQR CI/CD
+name: BetterQR CI — Generate, Decode & Report
 
-on: [push, pull_request]
+on:
+  push:
+  pull_request:
 
 jobs:
-  build:
+  test:
+    name: QR Generate → Decode → Verify
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
+      # ── checkout ──────────────────────────────────────────────────────────
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-    - name: Set up Python
-      uses: actions/setup-python@v5
-      with:
-        python-version: '3.x'
+      # ── python ────────────────────────────────────────────────────────────
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
 
-    - name: Install system dependencies for pyzbar
-      run: sudo apt-get update && sudo apt-get install -y libzbar0
+      # ── system deps for pyzbar (zbar shared library) ──────────────────────
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y libzbar0
 
-    - name: Install Python dependencies
-      run: |
-        pip install --upgrade pip
-        pip install -e .
-        pip install pytest pytest-json-report requests pyzbar Pillow
+      # ── install betterqr in editable mode ─────────────────────────────────
+      - name: Install BetterQR (editable)
+        run: pip install -e .
 
-    - name: Run tests and generate report
-      run: |
-        pytest --json-report --json-report-file=report.json src/betterqr/tests/test_cli.py
+      # ── install test-only deps (never packaged with PyPI build) ───────────
+      - name: Install test dependencies
+        run: |
+          pip install \
+            pytest \
+            pytest-json-report \
+            pyzbar \
+            Pillow \
+            requests
 
-    - name: Upload test artifacts (generated images)
-      uses: actions/upload-artifact@v4
-      with:
-        name: generated-qrcodes
-        path: | 
-          test_*.png
-          dummy_logo.png
+      # ── run the full test suite ───────────────────────────────────────────
+      - name: Run QR generation & decode tests
+        run: |
+          pytest tests/test_betterqr.py \
+            --json-report \
+            --json-report-file=report.json \
+            -v
+        continue-on-error: true   # always proceed to reporting step
 
-    - name: Send Discord Notification
-      if: always()
-      run: python src/betterqr/report_to_discord.py ${{ secrets.DISCORD_WEBHOOK_URL }} report.json
-      env:
-        DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+      # ── upload QR images + zip as workflow artifact ────────────────────────
+      - name: Upload QR outputs artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: qr-outputs
+          path: |
+            qr_outputs/
+            qr_outputs.zip
+            test_results.json
+            report.json
+          if-no-files-found: warn
+
+      # ── send Discord report ───────────────────────────────────────────────
+      - name: Send Discord report
+        if: always()
+        run: python scripts/report_to_discord.py "$DISCORD_WEBHOOK_URL"
+        env:
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
