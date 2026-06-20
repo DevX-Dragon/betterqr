@@ -193,7 +193,7 @@ def main() -> None:
     )
     output_group.add_argument("--info", action="store_true", help="Print QR code metadata (version, size, mode, etc.)")
 
-    args = parser.parse_args()
+    args = parser.parse_intermixed_args()
 
     from .core import QR, WiFi, VCard, GeoLocation, SMS, Email, Phone
 
