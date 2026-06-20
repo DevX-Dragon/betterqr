@@ -165,7 +165,7 @@ def animate(
                 for c in range(size):
                     dist = abs(c - band_center)
                     t = max(0.0, 1.0 - dist / 3.0)
-                    row.append(1.0 + t * 0.6 if matrix[r][c] else 0.0)
+                    row.append((0.55 + t * 0.45) if matrix[r][c] else 0.0)
                 mask.append(row)
             yield mask
 
@@ -178,7 +178,7 @@ def animate(
 
     def masks_scan():
         for f in range(n_frames):
-            scan_row = f / n_frames * size
+            scan_row = f / max(n_frames - 1, 1) * (size + 2)
             mask = []
             for r in range(size):
                 if r < scan_row - 2:
@@ -209,13 +209,14 @@ def animate(
 
     def masks_build():
         for f in range(n_frames):
-            rows_visible = int((f / n_frames) * size)
+            progress = f / max(n_frames - 1, 1)
+            rows_visible = int(progress * (size + 1))
             mask = []
             for r in range(size):
                 if r < rows_visible:
                     row = [1.0 if matrix[r][c] else 0.0 for c in range(size)]
                 elif r == rows_visible:
-                    partial = (f / n_frames * size) - rows_visible
+                    partial = progress * (size + 1) - rows_visible
                     row = [partial if matrix[r][c] else 0.0 for c in range(size)]
                 else:
                     row = [0.0] * size
@@ -224,15 +225,28 @@ def animate(
 
     def masks_matrix():
         drops = [random.random() * size for _ in range(size)]
+        settled = [False] * size
         for f in range(n_frames):
+            progress = f / max(n_frames - 1, 1)
             for c in range(size):
                 drops[c] = (drops[c] + random.uniform(0.5, 1.5)) % (size + 5)
+                # Columns increasingly settle (lock to full brightness) as animation nears end
+                if not settled[c] and progress > 0.6:
+                    if random.random() < (progress - 0.6) / 0.4 * 0.3:
+                        settled[c] = True
             mask = []
             for r in range(size):
                 row = []
                 for c in range(size):
                     if not matrix[r][c]:
                         row.append(0.0)
+                        continue
+                    # Last frame: everything fully visible so the code can be scanned
+                    if f == n_frames - 1:
+                        row.append(1.0)
+                        continue
+                    if settled[c]:
+                        row.append(1.0)
                         continue
                     drop = drops[c] % size
                     dist = (drop - r) % size
@@ -301,11 +315,17 @@ def animate(
         if effect == "rotate":
             hue_shift = (f / n_frames) * 360
             import colorsys
-            r_, g_, b_ = [x/255 for x in fill_rgb]
+            # Use accent_rgb as the color to rotate; if it's too dark/desaturated,
+            # fall back to a vivid reference so the effect is visible.
+            base = accent_rgb if accent_color else fill_rgb
+            r_, g_, b_ = [x / 255 for x in base]
             h, s, v = colorsys.rgb_to_hsv(r_, g_, b_)
+            if s < 0.2 or v < 0.2:
+                # Boost to a vivid color so hue rotation is perceptible
+                s, v = 0.85, 0.85
             h = (h + hue_shift / 360) % 1.0
             nr, ng, nb = colorsys.hsv_to_rgb(h, s, v)
-            return (int(nr*255), int(ng*255), int(nb*255)), finder_rgb
+            return (int(nr * 255), int(ng * 255), int(nb * 255)), finder_rgb
         return fill_rgb, finder_rgb
 
     if effect == "rotate":
