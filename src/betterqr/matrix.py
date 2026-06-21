@@ -120,17 +120,17 @@ def _place_dark_module(grid, version):
 
 
 def _reserve_format_areas(reserved, size):
-    """Mark format information areas as reserved."""
-    # Around top-left finder
+    """Mark format information areas as reserved (ISO 18004:2015 §7.9.1)."""
+    # Copy 1: top-left finder area
     for i in range(9):
-        reserved[8][i] = True
-        reserved[i][8] = True
-    # Top-right format area
+        reserved[8][i] = True   # row 8, cols 0-8
+        reserved[i][8] = True   # col 8, rows 0-8
+    # Copy 2: top-right area (row 8, cols size-8..size-1)
     for i in range(8):
         reserved[8][size - 1 - i] = True
-    # Bottom-left format area
-    for i in range(7):
-        reserved[size - 7 + i][8] = True
+    # Copy 2: bottom-left area (col 8, rows size-8..size-1)
+    for i in range(8):
+        reserved[size - 1 - i][8] = True
 
 
 def _reserve_version_areas(reserved, size, version):
@@ -148,26 +148,35 @@ def _reserve_version_areas(reserved, size, version):
 
 
 def _write_format_info(grid, ecc_level: str, mask_pattern: int, size: int):
-    """Write format information (15 bits, two copies)."""
+    """Write format information (15 bits, two copies) per ISO 18004:2015 §7.9.1.
+
+    Placement matches segno's verified add_format_info logic:
+      - Copy 1 vertical (col 8): bit i at row i (skip row 6), LSB first
+      - Copy 1 horizontal (row 8): bit (14-i) at col i (skip col 6), MSB first
+      - Copy 2 top-right (row 8): same as vertical bits, cols size-1..size-8
+      - Copy 2 bottom-left (col 8): same as horizontal bits, rows size-1..size-8
+    """
     fmt = FORMAT_INFO[(ecc_level, mask_pattern)]
+    row_eight = grid[8]
 
-    def write_bit(r, c, bit_idx):
-        bit = (fmt >> (14 - bit_idx)) & 1
-        grid[r][c] = bit
-
-    # Copy 1: around top-left finder
-    for i in range(6):
-        write_bit(8, i, i)
-    write_bit(8, 7, 6)
-    write_bit(8, 8, 7)
-    write_bit(7, 8, 8)
-    for i in range(5, -1, -1):
-        write_bit(i, 8, 14 - i)
-
+    voffset = 0
+    hoffset = 0
     for i in range(8):
-        write_bit(8, size - 1 - i, i)
-    for i in range(7):
-        write_bit(size - 7 + i, 8, 8 + i)
+        vbit = (fmt >> i) & 1
+        hbit = (fmt >> (14 - i)) & 1
+        if i == 6:
+            voffset = 1   # skip row 6 (timing)
+            hoffset = 1   # skip col 6 (timing)
+        # Copy 1
+        grid[i + voffset][8] = vbit     # vertical strip, col 8
+        row_eight[i + hoffset] = hbit   # horizontal strip, row 8
+
+        # Copy 2
+        row_eight[size - 1 - i] = vbit          # top-right, row 8
+        grid[size - 1 - i][8] = hbit             # bottom-left, col 8
+
+    # Dark module (always dark)
+    grid[size - 8][8] = _DARK
 
 
 def _write_micro_format_info(grid, ecc_level: str, mask_pattern: int, version: int, size: int):
