@@ -386,6 +386,13 @@ class QR:
         """Save QR code to a file."""
         bs = self._box_size if box_size is None else box_size
         bd = self._border if border is None else border
+
+        
+        if box_size is None:
+            n_modules = self.module_count + 2 * bd
+            min_px = 400
+            if n_modules * bs < min_px:
+                bs = max(bs, -(-min_px // n_modules))  # ceiling division
         ext = filepath.rsplit('.', 1)[-1].lower()
 
         if ext == "gif" and self._anim_effect:
@@ -522,8 +529,7 @@ class WiFi:
         self._s, self._p, self._sec = ssid, password, security
 
     def __str__(self):
-        sec = self._sec.lower() if self._sec else "nopass"
-        return f"WIFI:S:{self._s};T:{sec};P:{self._p};;"
+        return f"WIFI:T:{self._sec};S:{self._s};P:{self._p};;"
 
 class VCard:
     def __init__(self, name: str, org: str = "", phone: str = "",
