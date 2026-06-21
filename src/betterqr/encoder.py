@@ -45,38 +45,54 @@ def _min_version(data: str, ecc_level: str, mode: int, qr_type: str = "standard"
         if mode == MODE_NUMERIC:
             if qr_type == "micro":
                 cc_bits = {1: 3, 2: 4, 3: 5, 4: 6}.get(version, 0)
+                # Mode indicator bits: M1=0, M2=1, M3=2, M4=3
+                mode_ind_bits = {1: 0, 2: 1, 3: 2, 4: 3}.get(version, 0)
             elif qr_type == "rmqr":
                 cc_bits = 8  # Placeholder for rMQR numeric char count bits
+                mode_ind_bits = 4
             else:
                 cc_bits = 10 if version <= 9 else (12 if version <= 26 else 14)
+                mode_ind_bits = 4
             groups = n // 3
             rem = n % 3
             data_bits = groups * 10 + (7 if rem == 1 else (4 if rem == 2 else 0))
-            needed = 4 + cc_bits + data_bits
+            needed = mode_ind_bits + cc_bits + data_bits
             if needed <= available_bits:
                 return version
         elif mode == MODE_ALPHANUMERIC:
             if qr_type == "micro":
+                # M1 does not support alphanumeric — skip it
+                if version == 1:
+                    continue
                 cc_bits = {2: 3, 3: 4, 4: 5}.get(version, 0)
+                mode_ind_bits = {2: 1, 3: 2, 4: 3}.get(version, 0)
             elif qr_type == "rmqr":
                 cc_bits = 6  # Placeholder for rMQR alphanumeric char count bits
+                mode_ind_bits = 4
             else:
                 cc_bits = 9 if version <= 9 else (11 if version <= 26 else 13)
+                mode_ind_bits = 4
             pairs = n // 2
             data_bits = pairs * 11 + (6 if n % 2 else 0)
-            needed = 4 + cc_bits + data_bits
+            needed = mode_ind_bits + cc_bits + data_bits
             if needed <= available_bits:
                 return version
         else:  # BYTE
             byte_data = data.encode('utf-8')
             data_bits = len(byte_data) * 8
             if qr_type == "micro":
+                # M1 and M2 do not support byte mode — skip them
+                if version in (1, 2):
+                    continue
                 cc_bits = {3: 4, 4: 5}.get(version, 0)
+                mode_ind_bits = {3: 2, 4: 3}.get(version, 0)
             elif qr_type == "rmqr":
                 cc_bits = 7  # Placeholder for rMQR byte char count bits
+                mode_ind_bits = 4
             else:
                 cc_bits = 8 if version <= 9 else 16
-            needed = 4 + cc_bits + data_bits
+                mode_ind_bits = 4
+            needed = mode_ind_bits + cc_bits + data_bits
             if needed <= available_bits:
                 return version
     raise ValueError(f"Data too long to encode in any QR version at ECC level {ecc_level}")
@@ -146,8 +162,6 @@ def encode_data(data: str, ecc_level: str, version: int | None = None, qr_type: 
             bs.append(micro_mode_val, micro_mode_bits)
     else:
         bs.append(mode, 4)
-
-    # Character count indicator (ISO 18004:2015 Table 3 / Annex D)
     n = len(data.encode('utf-8')) if mode == MODE_BYTE else len(data)
     if mode == MODE_NUMERIC:
         if qr_type == "micro":
