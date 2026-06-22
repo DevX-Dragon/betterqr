@@ -156,6 +156,9 @@ def animate(
     size = len(matrix)
     frames: list[Image.Image] = []
 
+    def _full_mask():
+        return [[1.0 if matrix[r][c] else 0.0 for c in range(size)] for r in range(size)]
+
     def masks_shimmer():
         for f in range(n_frames):
             band_center = (f / n_frames) * (size + 4) - 2
@@ -340,6 +343,10 @@ def animate(
             img = _make_base_frame(matrix, box_size, border, fill_rgb, back_rgb,
                                    module_shape, finder_rgb, mask)
             frames.append(img)
+
+    full_img = _make_base_frame(matrix, box_size, border, fill_rgb, back_rgb,
+                                module_shape, finder_rgb, _full_mask())
+    frames.insert(0, full_img)
 
     # ---------- Encode GIF ----------
     duration_ms = int(1000 / fps)
