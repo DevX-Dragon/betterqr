@@ -199,6 +199,28 @@ def main() -> None:
 
     data = None
 
+    _output_exts = ('.png', '.jpg', '.jpeg', '.svg', '.gif', '.pdf')
+
+    def _pop_output_from(attr):
+        """If the last item in a nargs=+ list looks like an output file, move it to args.output."""
+        val = getattr(args, attr, None)
+        if val and any(val[-1].lower().endswith(e) for e in _output_exts):
+            args.output = val[-1]
+            setattr(args, attr, val[:-1] or None)
+
+    for _attr in ('wifi', 'email', 'sms'):
+        _pop_output_from(_attr)
+
+    # For helper flags whose nargs is fixed (--geo, --phone, --contact), any trailing
+    # positional ends up in args.data; redirect it to args.output.
+    _helper_active = bool(args.wifi or args.contact or args.geo or args.sms or
+                          (args.email and not args.contact) or
+                          (args.phone and not args.contact))
+    if _helper_active and args.data and args.output == "qr.png":
+        if any(args.data.lower().endswith(e) for e in _output_exts):
+            args.output = args.data
+            args.data = None
+
     if args.wifi:
         ssid = args.wifi[0]
         password = args.wifi[1] if len(args.wifi) > 1 else ""
