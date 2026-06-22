@@ -387,7 +387,7 @@ class QR:
         bs = self._box_size if box_size is None else box_size
         bd = self._border if border is None else border
 
-        
+       
         if box_size is None:
             n_modules = self.module_count + 2 * bd
             min_px = 400
@@ -593,7 +593,7 @@ class SMS:
         self.phone, self.body = phone, body
 
     def __str__(self):
-        return f"smsto:{self.phone}:{self.body}" if self.body else f"sms:{self.phone}"
+        return f"sms:{self.phone}:{self.body}" if self.body else f"sms:{self.phone}"
 
 class Email:
     def __init__(self, address: str, subject: str = "", body: str = ""):
