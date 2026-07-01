@@ -9,9 +9,9 @@ BetterQR is a powerful and versatile Python library for generating beautiful, sc
 
 ## Features
 
-- **Pure Python:** No external QR code generation libraries required.
 - **Highly Customizable:** Make QR codes in any shape (square, circle, rounded, diamond, star, gapped, vertical bar, horizontal bar), with custom colors and backgrounds.
 - **Logo Embedding:** Easily embed any logos / image into the center of the QR codes.
+- **MicroQR Support:** Now supports MicroQR generations.
 - **Decorative frames and labels:** Add stylish frames and text labels above or below the QR codes.
 - **Animated QR codes:** Generate animated GIFs of the QR codes with effects like shimmer, fade, scan, pulse and more.
 - **Data Types:** Conveniently generate QR codes for WI-FI, vCards, MeCards, Geo-Locations, SMS, Email and Phone Numbers.

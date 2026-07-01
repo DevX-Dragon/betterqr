@@ -123,6 +123,7 @@ class QR:
         self._matrix = build_matrix(self._codewords, self._version, ecc, qr_type=qr_type, logo_info=logo_info)
         self._ecc = ecc
 
+
     # ──────────────────────────────────────────────────────────────────
     # Styling
 
@@ -234,6 +235,7 @@ class QR:
         self._logo_ratio   = ratio
         self._logo_shape   = shape
         self._logo_padding = padding
+        self._logo_size_px = int(self._version_size * ratio)
         self._logo_pad_color = padding_color
         self._logo_border  = border
         self._logo_border_w = border_width
@@ -252,6 +254,7 @@ class QR:
                 "border": self._logo_border,
                 "border_width": self._logo_border_w,
                 "box_size": self._box_size,
+                "size_px": self._logo_size_px,
                 "border_modules": self._border
             }
         return None

@@ -1,0 +1,962 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BetterQR — The QR Library Python Deserves</title>
+  <meta name="description" content="BetterQR is a powerful, zero-dependency Python library for generating beautiful, animated, and fully customizable QR codes." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --ink:      #0d0f14;
+      --paper:    #f5f3ee;
+      --accent:   #5c3bff;
+      --accent2:  #ff5c5c;
+      --mid:      #8b8b99;
+      --border:   rgba(13,15,20,0.10);
+      --mono:     'JetBrains Mono', monospace;
+      --sans:     'Space Grotesk', sans-serif;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: var(--sans);
+      background: var(--paper);
+      color: var(--ink);
+      line-height: 1.6;
+      overflow-x: hidden;
+    }
+
+    /* ── NAV ── */
+    nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 clamp(1.5rem, 5vw, 4rem);
+      height: 64px;
+      background: rgba(245,243,238,0.88);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+    }
+    .nav-logo {
+      font-weight: 700; font-size: 1.1rem; letter-spacing: -0.02em;
+      text-decoration: none; color: var(--ink);
+      display: flex; align-items: center; gap: 0.5rem;
+    }
+    .nav-logo-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); }
+    .nav-links { display: flex; gap: 2rem; list-style: none; }
+    .nav-links a { text-decoration: none; color: var(--mid); font-size: 0.9rem; font-weight: 500; transition: color .2s; }
+    .nav-links a:hover { color: var(--ink); }
+    .nav-cta {
+      background: var(--ink); color: var(--paper);
+      padding: 0.45rem 1.1rem; border-radius: 6px;
+      font-size: 0.85rem; font-weight: 600; text-decoration: none;
+      transition: opacity .2s;
+    }
+    .nav-cta:hover { opacity: 0.8; }
+
+    /* ── HERO ── */
+    .hero {
+      min-height: 100vh;
+      display: flex; flex-direction: column; justify-content: center; align-items: center;
+      text-align: center;
+      padding: 7rem clamp(1.5rem, 5vw, 4rem) 4rem;
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* Animated QR grid background */
+    .hero-grid {
+      position: absolute; inset: 0; z-index: 0;
+      pointer-events: none;
+    }
+    .hero-grid svg { width: 100%; height: 100%; opacity: 0.04; }
+
+    .hero-badge {
+      display: inline-flex; align-items: center; gap: 0.4rem;
+      background: var(--ink); color: var(--paper);
+      font-family: var(--mono); font-size: 0.72rem; font-weight: 500;
+      padding: 0.3rem 0.75rem; border-radius: 100px;
+      margin-bottom: 1.75rem; letter-spacing: 0.05em;
+      position: relative; z-index: 1;
+    }
+    .hero-badge-dot { width: 6px; height: 6px; border-radius: 50%; background: #4ade80; animation: blink 2s ease-in-out infinite; }
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+    h1 {
+      font-size: clamp(2.8rem, 7vw, 5.5rem);
+      font-weight: 700;
+      line-height: 1.06;
+      letter-spacing: -0.035em;
+      max-width: 16ch;
+      margin: 0 auto 1.5rem;
+      position: relative; z-index: 1;
+    }
+    h1 em { font-style: normal; color: var(--accent); }
+
+    .hero-sub {
+      font-size: clamp(1rem, 2vw, 1.2rem);
+      color: var(--mid);
+      max-width: 52ch;
+      margin: 0 auto 2.5rem;
+      font-weight: 400;
+      position: relative; z-index: 1;
+    }
+
+    .hero-actions {
+      display: flex; flex-wrap: wrap; gap: 0.75rem; justify-content: center;
+      position: relative; z-index: 1;
+    }
+    .btn-primary {
+      display: inline-flex; align-items: center; gap: 0.5rem;
+      background: var(--accent); color: #fff;
+      padding: 0.75rem 1.75rem; border-radius: 8px;
+      font-weight: 600; font-size: 0.95rem; text-decoration: none;
+      transition: transform .15s, box-shadow .15s;
+      box-shadow: 0 4px 24px rgba(92,59,255,0.3);
+    }
+    .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 32px rgba(92,59,255,0.4); }
+    .btn-secondary {
+      display: inline-flex; align-items: center; gap: 0.5rem;
+      background: transparent; color: var(--ink);
+      padding: 0.75rem 1.75rem; border-radius: 8px;
+      font-weight: 600; font-size: 0.95rem; text-decoration: none;
+      border: 1.5px solid var(--border);
+      transition: border-color .2s, background .2s;
+    }
+    .btn-secondary:hover { border-color: var(--ink); background: rgba(13,15,20,0.04); }
+
+    /* Floating QR preview */
+    .hero-visual {
+      position: relative; z-index: 1;
+      margin-top: 4rem;
+      display: flex; gap: 1.5rem; justify-content: center; flex-wrap: wrap;
+    }
+    .qr-card {
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 1.25rem;
+      display: flex; flex-direction: column; align-items: center; gap: 0.5rem;
+      box-shadow: 0 2px 16px rgba(13,15,20,0.06);
+      transition: transform .25s, box-shadow .25s;
+    }
+    .qr-card:hover { transform: translateY(-4px); box-shadow: 0 8px 32px rgba(13,15,20,0.10); }
+    .qr-card canvas { width: 100px; height: 100px; }
+    .qr-label { font-size: 0.72rem; color: var(--mid); font-family: var(--mono); }
+
+    /* ── INSTALL STRIP ── */
+    .install-strip {
+      background: var(--ink);
+      padding: 2.5rem clamp(1.5rem, 5vw, 4rem);
+      display: flex; align-items: center; justify-content: center; gap: 2rem;
+      flex-wrap: wrap;
+    }
+    .install-strip p { color: rgba(245,243,238,0.5); font-size: 0.9rem; }
+    .install-cmd {
+      display: flex; align-items: center; gap: 1rem;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 8px; padding: 0.75rem 1.25rem;
+    }
+    .install-cmd code {
+      font-family: var(--mono); font-size: 0.95rem; color: #fff;
+    }
+    .copy-btn {
+      background: rgba(255,255,255,0.1); border: none; border-radius: 5px;
+      color: rgba(255,255,255,0.6); cursor: pointer;
+      padding: 0.3rem 0.6rem; font-size: 0.75rem; font-family: var(--mono);
+      transition: background .2s, color .2s;
+    }
+    .copy-btn:hover { background: rgba(255,255,255,0.2); color: #fff; }
+
+    /* ── SECTIONS ── */
+    section { padding: 6rem clamp(1.5rem, 5vw, 4rem); }
+    .section-label {
+      font-family: var(--mono); font-size: 0.75rem; font-weight: 500;
+      color: var(--accent); letter-spacing: 0.12em; text-transform: uppercase;
+      margin-bottom: 0.75rem; display: block;
+    }
+    h2 {
+      font-size: clamp(1.8rem, 4vw, 2.8rem);
+      font-weight: 700; letter-spacing: -0.03em;
+      line-height: 1.15; margin-bottom: 1rem;
+    }
+    .section-sub { color: var(--mid); font-size: 1.05rem; max-width: 54ch; margin-bottom: 3rem; }
+
+    /* ── FEATURES GRID ── */
+    #features { background: #fff; }
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 1.25rem;
+    }
+    .feature-card {
+      background: var(--paper);
+      border: 1px solid var(--border);
+      border-radius: 14px; padding: 1.75rem;
+      transition: border-color .2s, transform .2s;
+    }
+    .feature-card:hover { border-color: var(--accent); transform: translateY(-2px); }
+    .feature-icon {
+      width: 42px; height: 42px; border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.3rem; margin-bottom: 1rem;
+    }
+    .feature-card h3 { font-size: 1rem; font-weight: 600; margin-bottom: 0.4rem; }
+    .feature-card p { font-size: 0.88rem; color: var(--mid); line-height: 1.6; }
+
+    /* ── CODE SHOWCASE ── */
+    #usage { background: var(--paper); }
+    .usage-tabs {
+      display: flex; gap: 0; border-bottom: 1px solid var(--border);
+      margin-bottom: 0; overflow-x: auto;
+    }
+    .tab-btn {
+      background: none; border: none; cursor: pointer;
+      padding: 0.75rem 1.25rem; font-family: var(--mono); font-size: 0.8rem;
+      color: var(--mid); border-bottom: 2px solid transparent;
+      transition: color .2s, border-color .2s; white-space: nowrap;
+    }
+    .tab-btn.active { color: var(--ink); border-bottom-color: var(--accent); }
+    .code-panel {
+      background: var(--ink);
+      border-radius: 0 0 14px 14px;
+      padding: 2rem 1.75rem;
+      overflow-x: auto;
+      display: none;
+    }
+    .code-panel.active { display: block; }
+    .code-panel pre {
+      font-family: var(--mono); font-size: 0.85rem; line-height: 1.75;
+      color: #e0ddd6; margin: 0;
+    }
+    .code-wrap {
+      border: 1px solid var(--border); border-radius: 14px; overflow: hidden;
+      max-width: 720px;
+    }
+    .usage-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 4rem; align-items: start; }
+    @media(max-width:820px){.usage-layout{grid-template-columns:1fr;}}
+    .usage-desc h3 { font-size: 1.2rem; font-weight: 600; margin-bottom: 0.5rem; }
+    .usage-desc p { color: var(--mid); font-size: 0.92rem; margin-bottom: 1rem; }
+    .usage-desc ul { list-style: none; display: flex; flex-direction: column; gap: 0.5rem; }
+    .usage-desc li {
+      font-size: 0.88rem; color: var(--mid);
+      display: flex; align-items: center; gap: 0.5rem;
+    }
+    .usage-desc li::before { content: "→"; color: var(--accent); font-family: var(--mono); }
+
+    /* token colors */
+    .kw  { color: #c792ea; }
+    .fn  { color: #82aaff; }
+    .str { color: #c3e88d; }
+    .cm  { color: #546e7a; font-style: italic; }
+    .num { color: #f78c6c; }
+    .op  { color: #89ddff; }
+    .cls { color: #ffcb6b; }
+
+    /* ── DATA TYPES ── */
+    #datatypes { background: #fff; }
+    .datatypes-grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 1rem;
+    }
+    .dtype-card {
+      border: 1px solid var(--border); border-radius: 12px;
+      padding: 1.25rem; background: var(--paper);
+      transition: border-color .2s, background .2s;
+      cursor: default;
+    }
+    .dtype-card:hover { border-color: var(--accent); background: #fff; }
+    .dtype-icon { font-size: 1.6rem; margin-bottom: 0.6rem; }
+    .dtype-card h4 { font-size: 0.95rem; font-weight: 600; margin-bottom: 0.2rem; }
+    .dtype-card p { font-size: 0.8rem; color: var(--mid); }
+
+    /* ── CLI SECTION ── */
+    #cli { background: var(--ink); color: var(--paper); }
+    #cli .section-label { color: #82aaff; }
+    #cli h2, #cli .section-sub { color: var(--paper); }
+    #cli .section-sub { color: rgba(245,243,238,0.5); }
+    .cli-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 3rem; align-items: start; }
+    @media(max-width:700px){.cli-grid{grid-template-columns:1fr;}}
+    .cli-example {
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.09);
+      border-radius: 12px; padding: 1.5rem; margin-bottom: 1rem;
+    }
+    .cli-example code {
+      font-family: var(--mono); font-size: 0.85rem; color: #c3e88d;
+      display: block; margin-bottom: 0.4rem;
+    }
+    .cli-example p { font-size: 0.82rem; color: rgba(245,243,238,0.45); }
+    .cli-table { width: 100%; border-collapse: collapse; }
+    .cli-table th {
+      text-align: left; font-size: 0.75rem; font-family: var(--mono);
+      color: rgba(245,243,238,0.4); border-bottom: 1px solid rgba(255,255,255,0.08);
+      padding: 0.5rem 0.75rem;
+    }
+    .cli-table td {
+      font-size: 0.82rem; padding: 0.6rem 0.75rem;
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+    }
+    .cli-table td:first-child { font-family: var(--mono); color: #82aaff; }
+    .cli-table td:last-child { color: rgba(245,243,238,0.55); }
+
+    /* ── ANIMATION EFFECTS ── */
+    #effects { background: var(--paper); }
+    .effects-row {
+      display: flex; gap: 1rem; flex-wrap: wrap;
+    }
+    .effect-pill {
+      display: inline-flex; align-items: center; gap: 0.5rem;
+      background: #fff; border: 1px solid var(--border);
+      border-radius: 100px; padding: 0.5rem 1.1rem;
+      font-size: 0.85rem; font-weight: 500;
+      transition: background .2s, border-color .2s;
+    }
+    .effect-pill:hover { background: var(--accent); color: #fff; border-color: var(--accent); }
+    .effect-pill span { font-size: 1rem; }
+
+    /* ── INSTALL GUIDE ── */
+    #install { background: #fff; }
+    .install-steps { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 1.5rem; margin-top: 2.5rem; }
+    .step {
+      position: relative;
+      padding: 1.5rem;
+      background: var(--paper);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+    }
+    .step-num {
+      position: absolute; top: -14px; left: 1.5rem;
+      background: var(--accent); color: #fff;
+      font-size: 0.75rem; font-weight: 700; font-family: var(--mono);
+      width: 28px; height: 28px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .step h4 { font-size: 0.95rem; font-weight: 600; margin-bottom: 0.35rem; }
+    .step p { font-size: 0.84rem; color: var(--mid); }
+    .step code {
+      display: inline-block; margin-top: 0.5rem;
+      font-family: var(--mono); font-size: 0.8rem;
+      background: var(--ink); color: #c3e88d;
+      padding: 0.3rem 0.65rem; border-radius: 5px;
+    }
+
+    /* ── FOOTER ── */
+    footer {
+      background: var(--ink); color: rgba(245,243,238,0.45);
+      padding: 3rem clamp(1.5rem, 5vw, 4rem);
+      display: flex; flex-wrap: wrap; justify-content: space-between; gap: 1.5rem;
+      font-size: 0.85rem;
+    }
+    footer a { color: rgba(245,243,238,0.6); text-decoration: none; }
+    footer a:hover { color: var(--paper); }
+    .footer-logo { font-weight: 700; font-size: 1rem; color: var(--paper); }
+    .footer-links { display: flex; gap: 1.5rem; flex-wrap: wrap; align-items: center; }
+    .badge-row { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 2rem; }
+    .badge { display: inline-flex; align-items: center; gap: 0.35rem; background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.1); border-radius: 5px; padding: 0.3rem 0.65rem; font-family: var(--mono); font-size: 0.72rem; color: rgba(245,243,238,0.6); }
+    .badge-key { color: rgba(245,243,238,0.35); }
+    .badge-val { color: #c3e88d; }
+
+    /* ── SHAPES DEMO ── */
+    .shapes-row { display: flex; gap: 1rem; flex-wrap: wrap; margin-top: 1.5rem; }
+    .shape-pill {
+      background: #fff; border: 1px solid var(--border);
+      border-radius: 10px; padding: 0.75rem 1.1rem;
+      font-size: 0.82rem; font-family: var(--mono);
+      color: var(--ink); transition: background .2s, border-color .2s;
+    }
+    .shape-pill:hover { border-color: var(--accent); color: var(--accent); }
+
+    /* ── RESPONSIVE ── */
+    @media(max-width:600px){
+      .nav-links { display: none; }
+      h1 { font-size: 2.4rem; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <a href="#" class="nav-logo"><span class="nav-logo-dot"></span>BetterQR</a>
+  <ul class="nav-links">
+    <li><a href="#features">Features</a></li>
+    <li><a href="#usage">Usage</a></li>
+    <li><a href="#datatypes">Data Types</a></li>
+    <li><a href="#cli">CLI</a></li>
+    <li><a href="#install">Install</a></li>
+  </ul>
+  <a href="https://github.com/DevX-Dragon/BetterQR" target="_blank" class="nav-cta">GitHub →</a>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <!-- QR grid decoration -->
+  <div class="hero-grid">
+    <svg viewBox="0 0 1200 600" preserveAspectRatio="xMidYMid slice">
+      <defs>
+        <pattern id="qrpat" x="0" y="0" width="40" height="40" patternUnits="userSpaceOnUse">
+          <rect x="2" y="2" width="12" height="12" rx="2" fill="currentColor" opacity="0.5"/>
+          <rect x="26" y="2" width="12" height="12" rx="2" fill="currentColor" opacity="0.3"/>
+          <rect x="2" y="26" width="12" height="12" rx="2" fill="currentColor" opacity="0.2"/>
+          <rect x="26" y="26" width="12" height="12" rx="2" fill="currentColor" opacity="0.4"/>
+          <rect x="14" y="14" width="12" height="12" rx="2" fill="currentColor" opacity="0.15"/>
+        </pattern>
+      </defs>
+      <rect width="100%" height="100%" fill="url(#qrpat)" color="#0d0f14"/>
+    </svg>
+  </div>
+
+  <span class="hero-badge">
+    <span class="hero-badge-dot"></span>
+    v2.0.0 is now out!
+  </span>
+
+  <h1>The QR library<br />Python <em>deserves</em>.</h1>
+
+  <p class="hero-sub">
+    Generate beautiful, scannable QR codes — styled, animated, and fully
+    customizable — in pure Python with a single fluent API.
+  </p>
+
+  <div class="hero-actions">
+    <a href="#install" class="btn-primary">
+      Get started
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8h10M8 3l5 5-5 5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </a>
+    <a href="https://github.com/DevX-Dragon/BetterQR" target="_blank" class="btn-secondary">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+      View on GitHub
+    </a>
+  </div>
+
+  <!-- QR Previews (drawn with canvas) -->
+  <div class="hero-visual">
+  <div class="qr-card">
+    <img src="https://cdn.hackclub.com/019f0486-ad59-7b78-ba59-2626ff838566/qr.png" alt="Circle QR" width="100" height="100">
+    <span class="qr-label">shape=circle</span>
+  </div>
+  <div class="qr-card">
+    <img src="https://cdn.hackclub.com/019f0489-7347-785c-ad40-c3f254514f0c/image.png" alt="Gradient QR" width="100" height="100">
+    <span class="qr-label">gradient</span>
+  </div>
+  <div class="qr-card">
+    <img src="https://cdn.hackclub.com/019f048b-982e-759c-8a01-66a13eca169f/qr.png" alt="Logo with logpo embedded" width="100" height="100">
+    <span class="qr-label">QR code with logo</span>
+  </div>
+  <div class="qr-card">
+    <img src="https://cdn.hackclub.com/019f048c-e815-7af5-9979-f63eeac1861b/image.png" alt="MicroQR" width="100" height="100">
+    <span class="qr-label">microQR</span>
+  </div>
+</div>
+</section>
+
+<!-- INSTALL STRIP -->
+<div class="install-strip">
+  <p>Install via pip →</p>
+  <div class="install-cmd">
+    <code id="pip-cmd">pip install betterqr --upgrade</code>
+    <button class="copy-btn" onclick="copyPip()">copy</button>
+  </div>
+</div>
+
+<!-- FEATURES -->
+<section id="features">
+  <span class="section-label">What it does</span>
+  <h2>Everything you'd want<br />from a QR library.</h2>
+  <p class="section-sub">Built from the ground up in pure Python — no external QR engine — with a clean, chainable API.</p>
+
+  <div class="features-grid">
+    <div class="feature-card">
+      <div class="feature-icon" style="background:#f0edff">🎨</div>
+      <h3>8 Module Shapes</h3>
+      <p>Square, circle, rounded, diamond, star, gapped, vertical bar, and horizontal bar — mix and match to match your brand.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon" style="background:#fff0f0">🌈</div>
+      <h3>Gradient Fills</h3>
+      <p>Apply linear or radial gradients at any angle to make QR codes that feel designed, not generated.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon" style="background:#f0fff4">🖼️</div>
+      <h3>Logo Embedding</h3>
+      <p>Drop any PNG or JPG into the center. BetterQR handles clipping, padding, and shape masks automatically.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon" style="background:#fffbf0">✨</div>
+      <h3>Animated GIFs</h3>
+      <p>Shimmer, fade, scan, pulse, matrix, wave — six animation effects for QR codes that move.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon" style="background:#f0f8ff">🖼️</div>
+      <h3>Frames & Labels</h3>
+      <p>Add simple, rounded, double, or shadow frames and text labels above or below — no Photoshop required.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon" style="background:#fff0fb">📱</div>
+      <h3>Rich Data Types</h3>
+      <p>WiFi, vCard, MeCard, GeoLocation, Calendar Events, SMS, Email, Phone, and Crypto — all with typed helper classes.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon" style="background:#f5fff0">🔲</div>
+      <h3>MicroQR Support</h3>
+      <p>Generate compact MicroQR codes for small-label use cases where every pixel counts.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon" style="background:#fffff0">💻</div>
+      <h3>CLI Included</h3>
+      <p>The <code style="font-family:var(--mono);font-size:0.82em;background:var(--border);padding:1px 4px;border-radius:3px">betterqr</code> command ships with the package — generate QR codes without writing a line of code.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon" style="background:#f0f0ff">📦</div>
+      <h3>Multiple Formats</h3>
+      <p>Export as PNG, JPG, SVG, or GIF. Transparent backgrounds supported. JPEG quality control built in.</p>
+    </div>
+  </div>
+</section>
+
+<!-- USAGE -->
+<section id="usage">
+  <span class="section-label">Python API</span>
+  <h2>Fluent by design.</h2>
+  <p class="section-sub">Chain methods to build exactly what you want — no boilerplate, no config files.</p>
+
+  <div class="usage-layout">
+    <div>
+      <div class="code-wrap">
+        <div class="usage-tabs">
+          <button class="tab-btn active" onclick="showTab('basic',this)">Basic</button>
+          <button class="tab-btn" onclick="showTab('styled',this)">Styled</button>
+          <button class="tab-btn" onclick="showTab('logo',this)">With Logo</button>
+          <button class="tab-btn" onclick="showTab('animated',this)">Animated</button>
+          <button class="tab-btn" onclick="showTab('datatypes',this)">Data Types</button>
+        </div>
+        <div id="tab-basic" class="code-panel active">
+          <pre><span class="kw">from</span> betterqr <span class="kw">import</span> QR
+
+<span class="cm"># Simplest possible usage</span>
+<span class="cls">QR</span>(<span class="str">"https://example.com"</span>).save(<span class="str">"qr.png"</span>)
+
+<span class="cm"># With custom settings</span>
+qr = <span class="cls">QR</span>(
+    data=<span class="str">"https://example.com"</span>,
+    ecc=<span class="str">"H"</span>,       <span class="cm"># Error correction level</span>
+    box_size=<span class="num">10</span>,
+    border=<span class="num">4</span>
+)
+qr.save(<span class="str">"qr_custom.png"</span>)
+
+<span class="cm"># Display in terminal</span>
+qr.display()</pre>
+        </div>
+        <div id="tab-styled" class="code-panel">
+          <pre><span class="kw">from</span> betterqr <span class="kw">import</span> QR
+
+<span class="cm"># Colored + shaped</span>
+<span class="cls">QR</span>(<span class="str">"https://example.com"</span>).style(
+    fill_color=<span class="str">"#6C3082"</span>,
+    back_color=<span class="str">"#F3E8FF"</span>,
+    shape=<span class="str">"circle"</span>,
+    radius=<span class="num">0.8</span>
+).save(<span class="str">"styled.png"</span>)
+
+<span class="cm"># Gradient fill</span>
+<span class="cls">QR</span>(<span class="str">"Hello Gradient"</span>).gradient(
+    start_color=<span class="str">"#FF6B6B"</span>,
+    end_color=<span class="str">"#4ECDC4"</span>,
+    direction=<span class="str">"radial"</span>
+).save(<span class="str">"gradient.png"</span>)
+
+<span class="cm"># Transparent background</span>
+<span class="cls">QR</span>(<span class="str">"https://example.com"</span>).style(
+    back_color=<span class="str">"transparent"</span>
+).save(<span class="str">"transparent.png"</span>)</pre>
+        </div>
+        <div id="tab-logo" class="code-panel">
+          <pre><span class="kw">from</span> betterqr <span class="kw">import</span> QR
+
+<span class="cm"># Embed a logo in the center</span>
+<span class="cm"># Use ecc="H" for best scannability</span>
+<span class="cls">QR</span>(<span class="str">"https://mysite.com"</span>, ecc=<span class="str">"H"</span>).logo(
+    image_path=<span class="str">"logo.png"</span>,
+    ratio=<span class="num">0.3</span>,          <span class="cm"># 0.2–0.4 recommended</span>
+    shape=<span class="str">"rounded"</span>,
+    padding=<span class="num">0.05</span>
+).save(<span class="str">"logo_qr.png"</span>)
+
+<span class="cm"># Add a frame + label too</span>
+<span class="cls">QR</span>(<span class="str">"https://mysite.com"</span>, ecc=<span class="str">"H"</span>)\
+    .logo(<span class="str">"logo.png"</span>)\
+    .frame(style=<span class="str">"shadow"</span>, color=<span class="str">"#333"</span>)\
+    .label(text=<span class="str">"Scan me"</span>, position=<span class="str">"bottom"</span>)\
+    .save(<span class="str">"branded.png"</span>)</pre>
+        </div>
+        <div id="tab-animated" class="code-panel">
+          <pre><span class="kw">from</span> betterqr <span class="kw">import</span> QR
+
+<span class="cm"># Matrix rain effect</span>
+<span class="cls">QR</span>(<span class="str">"Animated QR"</span>).animate(
+    effect=<span class="str">"matrix"</span>,
+    frames=<span class="num">30</span>,
+    fps=<span class="num">12</span>
+).save(<span class="str">"matrix.gif"</span>)
+
+<span class="cm"># All available effects:</span>
+<span class="cm"># shimmer · fade · scan</span>
+<span class="cm"># pulse · matrix · wave</span>
+
+<span class="cm"># With duration control</span>
+<span class="cls">QR</span>(<span class="str">"Hello"</span>).animate(
+    effect=<span class="str">"pulse"</span>,
+    duration=<span class="num">3.0</span>,
+    fps=<span class="num">20</span>
+).save(<span class="str">"pulse.gif"</span>)</pre>
+        </div>
+        <div id="tab-datatypes" class="code-panel">
+          <pre><span class="kw">from</span> betterqr <span class="kw">import</span> QR, WiFi, VCard, SMS, Email
+
+<span class="cm"># WiFi QR code</span>
+<span class="cls">QR</span>(<span class="cls">WiFi</span>(<span class="str">"MyNet"</span>, <span class="str">"password"</span>, security=<span class="str">"WPA"</span>))\
+    .save(<span class="str">"wifi.png"</span>)
+
+<span class="cm"># Contact card</span>
+<span class="cls">QR</span>(<span class="cls">VCard</span>(
+    name=<span class="str">"Jane Doe"</span>,
+    phone=<span class="str">"+1-555-1234"</span>,
+    email=<span class="str">"jane@example.com"</span>,
+    organization=<span class="str">"Acme Corp"</span>
+)).save(<span class="str">"contact.png"</span>)
+
+<span class="cm"># SMS · Email · Phone · GeoLocation</span>
+<span class="cm"># Event · MeCard · Crypto</span>
+<span class="cm"># — all built in.</span></pre>
+        </div>
+      </div>
+    </div>
+
+    <div class="usage-desc">
+      <h3>Chainable. Readable. Pythonic.</h3>
+      <p>Every method returns the QR object, so you can chain style, logo, frame, label, animate, and save — in any order that makes sense for your use case.</p>
+      <ul>
+        <li>Zero external QR dependencies</li>
+        <li>Python 3.10–3.13 supported</li>
+        <li>Only dependency: Pillow ≥ 10.0</li>
+        <li>Auto-detects version and ECC</li>
+        <li>PIL Image access via .get_image()</li>
+        <li>Metadata: .version, .size, .data_capacity</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- DATA TYPES -->
+<section id="datatypes">
+  <span class="section-label">Data Types</span>
+  <h2>Not just URLs.</h2>
+  <p class="section-sub">Dedicated helper classes format the data string correctly for every QR standard — so you don't have to.</p>
+
+  <div class="datatypes-grid">
+    <div class="dtype-card">
+      <div class="dtype-icon">📶</div>
+      <h4>WiFi</h4>
+      <p>WPA, WEP, or open networks. Includes hidden network support.</p>
+    </div>
+    <div class="dtype-card">
+      <div class="dtype-icon">👤</div>
+      <h4>VCard</h4>
+      <p>Full contact cards with name, phone, email, org, URL, and address.</p>
+    </div>
+    <div class="dtype-card">
+      <div class="dtype-icon">📇</div>
+      <h4>MeCard</h4>
+      <p>Compact contact format for older device compatibility.</p>
+    </div>
+    <div class="dtype-card">
+      <div class="dtype-icon">📍</div>
+      <h4>GeoLocation</h4>
+      <p>Lat/lon coordinates, optional altitude and location query.</p>
+    </div>
+    <div class="dtype-card">
+      <div class="dtype-icon">📅</div>
+      <h4>Event</h4>
+      <p>Calendar events with title, start/end time, location, description.</p>
+    </div>
+    <div class="dtype-card">
+      <div class="dtype-icon">💬</div>
+      <h4>SMS</h4>
+      <p>Pre-filled SMS to a phone number with an optional message body.</p>
+    </div>
+    <div class="dtype-card">
+      <div class="dtype-icon">📧</div>
+      <h4>Email</h4>
+      <p>Email with address, subject line, and body pre-populated.</p>
+    </div>
+    <div class="dtype-card">
+      <div class="dtype-icon">📞</div>
+      <h4>Phone</h4>
+      <p>Tap-to-call QR codes for any phone number format.</p>
+    </div>
+    <div class="dtype-card">
+      <div class="dtype-icon">₿</div>
+      <h4>Crypto</h4>
+      <p>Bitcoin, Ethereum, and more — with address and optional amount.</p>
+    </div>
+  </div>
+</section>
+
+<!-- CLI -->
+<section id="cli">
+  <span class="section-label">Command Line</span>
+  <h2>No code required.</h2>
+  <p class="section-sub">The <code style="font-family:var(--mono);color:#c3e88d">betterqr</code> CLI ships with the package. Full feature parity with the Python API.</p>
+
+  <div class="cli-grid">
+    <div>
+      <div class="cli-example">
+        <code>betterqr "https://example.com"</code>
+        <p>Generate a basic QR code (outputs qr.png)</p>
+      </div>
+      <div class="cli-example">
+        <code>betterqr "https://mysite.com" out.png \<br />&nbsp;&nbsp;--logo logo.png --ecc H \<br />&nbsp;&nbsp;--shape circle --fill "#6C3082"</code>
+        <p>Styled QR with a logo</p>
+      </div>
+      <div class="cli-example">
+        <code>betterqr "Hello" animated.gif \<br />&nbsp;&nbsp;--effect matrix --fps 12</code>
+        <p>Animated GIF with matrix effect</p>
+      </div>
+      <div class="cli-example">
+        <code>betterqr "https://example.com" --display</code>
+        <p>Preview directly in your terminal</p>
+      </div>
+    </div>
+
+    <div>
+      <table class="cli-table">
+        <tr><th>Flag</th><th>Description</th></tr>
+        <tr><td>--ecc</td><td>Error correction (L/M/Q/H)</td></tr>
+        <tr><td>--shape</td><td>Module shape (8 options)</td></tr>
+        <tr><td>--fill</td><td>Fill color (hex)</td></tr>
+        <tr><td>--back</td><td>Background color (hex)</td></tr>
+        <tr><td>--gradient-start/end</td><td>Gradient colors</td></tr>
+        <tr><td>--logo</td><td>Path to logo image</td></tr>
+        <tr><td>--logo-ratio</td><td>Logo size (0–0.4)</td></tr>
+        <tr><td>--frame</td><td>Frame style</td></tr>
+        <tr><td>--label</td><td>Text label</td></tr>
+        <tr><td>--effect</td><td>Animation effect</td></tr>
+        <tr><td>--fps</td><td>Animation frame rate</td></tr>
+        <tr><td>--format</td><td>png / jpg / svg / gif</td></tr>
+        <tr><td>--display</td><td>Print to terminal</td></tr>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- EFFECTS -->
+<section id="effects">
+  <span class="section-label">Animation</span>
+  <h2>QR codes that move.</h2>
+  <p class="section-sub">Six animation effects for generating eye-catching GIFs. Control frames, FPS, and duration independently.</p>
+
+  <div class="effects-row">
+    <div class="effect-pill"><span>✨</span> shimmer</div>
+    <div class="effect-pill"><span>🌅</span> fade</div>
+    <div class="effect-pill"><span>📡</span> scan</div>
+    <div class="effect-pill"><span>💓</span> pulse</div>
+    <div class="effect-pill"><span>🖥️</span> matrix</div>
+    <div class="effect-pill"><span>〰️</span> wave</div>
+  </div>
+
+  <div style="margin-top:2.5rem">
+    <h3 style="font-size:1rem;font-weight:600;margin-bottom:0.75rem">Module shapes</h3>
+    <div class="shapes-row">
+      <div class="shape-pill">square</div>
+      <div class="shape-pill">circle</div>
+      <div class="shape-pill">rounded</div>
+      <div class="shape-pill">diamond</div>
+      <div class="shape-pill">star</div>
+      <div class="shape-pill">gapped</div>
+      <div class="shape-pill">vbar</div>
+      <div class="shape-pill">hbar</div>
+    </div>
+  </div>
+</section>
+
+<!-- INSTALL -->
+<section id="install">
+  <span class="section-label">Installation</span>
+  <h2>Up and running in seconds.</h2>
+
+  <div class="install-steps">
+    <div class="step">
+      <span class="step-num">1</span>
+      <h4>Install via pip</h4>
+      <p>BetterQR is on PyPI. Python 3.10 or higher required.</p>
+      <code>pip install betterqr</code>
+    </div>
+    <div class="step">
+      <span class="step-num">2</span>
+      <h4>Import and use</h4>
+      <p>The QR class is the single entry point for everything.</p>
+      <code>from betterqr import QR</code>
+    </div>
+    <div class="step">
+      <span class="step-num">3</span>
+      <h4>Or use the CLI</h4>
+      <p>The betterqr command is available immediately after install.</p>
+      <code>betterqr "your text"</code>
+    </div>
+    <div class="step">
+      <span class="step-num">4</span>
+      <h4>Install from source</h4>
+      <p>For contributors and edge builds — clone and install editable.</p>
+      <code>pip install -e .</code>
+    </div>
+  </div>
+
+  <div class="badge-row" style="margin-top:3rem">
+    <div class="badge"><span class="badge-key">python</span><span class="badge-val">3.10+</span></div>
+    <div class="badge"><span class="badge-key">version</span><span class="badge-val">1.0.0</span></div>
+    <div class="badge"><span class="badge-key">license</span><span class="badge-val">MIT</span></div>
+    <div class="badge"><span class="badge-key">dep</span><span class="badge-val">pillow ≥ 10</span></div>
+    <div class="badge"><span class="badge-key">pypi</span><span class="badge-val">betterqr</span></div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div>
+    <div class="footer-logo">BetterQR</div>
+    <p style="margin-top:0.35rem">Built by DevX-Dragon · A Student From Sri Lanka 🇱🇰</p>
+    <div class="badge-row">
+      <a href="https://pypi.org/project/betterqr/" target="_blank" class="badge"><span class="badge-key">pypi</span><span class="badge-val">betterqr</span></a>
+      <a href="https://github.com/DevX-Dragon/BetterQR" target="_blank" class="badge"><span class="badge-key">source</span><span class="badge-val">GitHub</span></a>
+    </div>
+  </div>
+  <div class="footer-links">
+    <a href="https://github.com/DevX-Dragon/BetterQR" target="_blank">GitHub</a>
+    <a href="https://pypi.org/project/betterqr/" target="_blank">PyPI</a>
+    <a href="https://github.com/DevX-Dragon/BetterQR/blob/main/docs/DOCUMENTATION.md" target="_blank">Docs</a>
+    <a href="https://github.com/DevX-Dragon/BetterQR/blob/main/CONTRIBUTING.md" target="_blank">Contributing</a>
+    <a href="https://github.com/DevX-Dragon/BetterQR/blob/main/LICENSE" target="_blank">MIT License</a>
+  </div>
+</footer>
+
+<script>
+/* ── Tab logic ── */
+function showTab(id, btn) {
+  document.querySelectorAll('.code-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + id).classList.add('active');
+  btn.classList.add('active');
+}
+
+/* ── Copy pip command ── */
+function copyPip() {
+  navigator.clipboard.writeText('pip install betterqr --upgrade');
+  const btn = document.querySelector('.copy-btn');
+  btn.textContent = 'copied!';
+  setTimeout(() => btn.textContent = 'copy', 1800);
+}
+
+/* ── Draw QR-like demo tiles on canvas ── */
+(function drawQRPreviews() {
+  const configs = [
+    { id: 'qr1', shape: 'circle',  fill: '#5c3bff', bg: '#f0edff' },
+    { id: 'qr2', shape: 'square',  fill: null,       bg: '#fff', gradient: ['#FF6B6B','#4ECDC4'] },
+    { id: 'qr3', shape: 'diamond', fill: '#ff5c5c',  bg: '#fff0f0' },
+    { id: 'qr4', shape: 'rounded', fill: '#0d0f14',  bg: '#f5f3ee' },
+  ];
+
+  // A representative small QR matrix (21×21 version 1 pattern approximation)
+  const matrix = [
+    [1,1,1,1,1,1,1,0,1,0,1,0,1,1,1,1,1,1,1,0,1],
+    [1,0,0,0,0,0,1,0,0,1,0,1,1,0,0,0,0,0,1,0,0],
+    [1,0,1,1,1,0,1,0,1,0,1,0,1,0,1,1,1,0,1,0,1],
+    [1,0,1,1,1,0,1,0,0,1,0,1,1,0,1,1,1,0,1,0,0],
+    [1,0,1,1,1,0,1,0,1,0,1,0,1,0,1,1,1,0,1,0,1],
+    [1,0,0,0,0,0,1,0,0,1,0,1,1,0,0,0,0,0,1,0,0],
+    [1,1,1,1,1,1,1,0,1,0,1,0,1,1,1,1,1,1,1,0,1],
+    [0,0,0,0,0,0,0,0,1,0,1,1,0,0,0,0,0,0,0,0,0],
+    [1,0,1,1,1,0,1,1,1,0,1,0,1,0,1,0,1,1,1,1,1],
+    [0,1,0,0,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,0,0],
+    [1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1],
+    [0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0],
+    [1,0,1,0,1,0,1,0,1,0,1,1,1,0,1,0,1,0,1,0,1],
+    [0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,1,0],
+    [1,1,1,1,1,1,1,0,0,0,1,0,1,0,1,1,1,0,1,0,1],
+    [1,0,0,0,0,0,1,0,1,1,0,1,0,1,1,0,0,1,0,0,0],
+    [1,0,1,1,1,0,1,0,1,0,1,0,1,0,0,1,1,0,1,0,1],
+    [1,0,1,1,1,0,1,0,0,1,0,1,0,0,1,0,0,0,0,1,0],
+    [1,0,1,1,1,0,1,0,1,0,1,0,1,1,0,1,1,1,1,0,1],
+    [1,0,0,0,0,0,1,0,0,1,0,1,0,0,1,0,0,0,0,0,0],
+    [1,1,1,1,1,1,1,0,1,0,1,1,1,1,0,1,1,1,1,0,1],
+  ];
+
+  configs.forEach(cfg => {
+    const canvas = document.getElementById(cfg.id);
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    const N = matrix.length;
+    const size = canvas.width;
+    const cell = size / (N + 2); // include a border
+    const off = cell;
+
+    // Background
+    ctx.fillStyle = cfg.bg;
+    ctx.fillRect(0, 0, size, size);
+
+    // Gradient setup
+    let grad = null;
+    if (cfg.gradient) {
+      grad = ctx.createLinearGradient(0, 0, size, size);
+      grad.addColorStop(0, cfg.gradient[0]);
+      grad.addColorStop(1, cfg.gradient[1]);
+    }
+
+    for (let row = 0; row < N; row++) {
+      for (let col = 0; col < N; col++) {
+        if (!matrix[row][col]) continue;
+        const x = off + col * cell;
+        const y = off + row * cell;
+        const s = cell * 0.82;
+        const r = s / 2;
+
+        ctx.fillStyle = grad || cfg.fill;
+        ctx.beginPath();
+
+        if (cfg.shape === 'circle') {
+          ctx.arc(x + r, y + r, r, 0, Math.PI * 2);
+        } else if (cfg.shape === 'rounded') {
+          const cr = r * 0.45;
+          ctx.moveTo(x + cr, y);
+          ctx.lineTo(x + s - cr, y);
+          ctx.quadraticCurveTo(x + s, y, x + s, y + cr);
+          ctx.lineTo(x + s, y + s - cr);
+          ctx.quadraticCurveTo(x + s, y + s, x + s - cr, y + s);
+          ctx.lineTo(x + cr, y + s);
+          ctx.quadraticCurveTo(x, y + s, x, y + s - cr);
+          ctx.lineTo(x, y + cr);
+          ctx.quadraticCurveTo(x, y, x + cr, y);
+        } else if (cfg.shape === 'diamond') {
+          ctx.moveTo(x + r, y);
+          ctx.lineTo(x + s, y + r);
+          ctx.lineTo(x + r, y + s);
+          ctx.lineTo(x, y + r);
+          ctx.closePath();
+        } else {
+          ctx.rect(x, y, s, s);
+        }
+        ctx.fill();
+      }
+    }
+  });
+})();
+</script>
+</body>
+</html>
