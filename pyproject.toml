@@ -8,7 +8,7 @@ description = "The upgraded qrcode library for Python"
 readme = "README.md"
 requires-python = ">=3.10"
 keywords = ["qrcode", "qrcode generator", "animated qrcode", "betterqr", "devx-dragon", "Sri Lanka"]
-version = "1.0.0"
+version = "2.0.0"
 authors = [{ name = "DevX-Dragon" }]
 license = { file = "LICENSE" }
 dependencies = [
