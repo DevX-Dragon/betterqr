@@ -40,7 +40,10 @@ def _min_version(data: str, ecc_level: str, mode: int, qr_type: str = "standard"
             continue  # Skip if version/ecc_level combination is not defined for micro QR
         data_cw, _, _ = ecc_lookup_table[version][ecc_level]
         # Available bits
-        available_bits = data_cw * 8
+        if qr_type == "micro" and version in (1, 3):
+            available_bits = (data_cw - 1) * 8 + 4
+        else:
+            available_bits = data_cw * 8
         # Required bits: mode indicator + char count + data
         if mode == MODE_NUMERIC:
             if qr_type == "micro":
