@@ -1,4 +1,4 @@
-# BetterQR Documentation v2.0.0
+# BetterQR Documentation
 
 Welcome to the comprehensive documentation for BetterQR, a powerful and flexible Python library for generating highly customizable QR codes. This document covers everything from installation and basic usage to advanced styling, animation, and data type shortcuts.
 
@@ -517,10 +517,24 @@ batch(items, output_dir="qrs", fill="#1D4ED8", shape="rounded")
 ## 5. Advanced Topics
 
 ### Micro QR Codes
-Micro QR codes are a compact version of standard QR codes, designed for applications where space is extremely limited. They support versions M1 to M4.
-- **M1**: 11x11 modules, up to 35 numeric characters.
-- **M4**: 17x17 modules, up to 35 alphanumeric characters with ECC level M.
-Note: Micro QR does not support ECC level 'H' or large logos.
+
+Micro QR codes are a compact version of standard QR codes for space-constrained labels.  
+BetterQR auto-selects the smallest compatible version when `version=None`.
+
+| Symbol | Size  | Max Numeric | Max Alpha | Max Bytes | ECC levels |
+|--------|-------|-------------|-----------|-----------|------------|
+| M1     | 11×11 | 5           | —         | —         | M only     |
+| M2     | 13×13 | 10 (L) / 8 (M) | 6 (L) / 5 (M) | — | L, M |
+| M3     | 15×15 | 23 (L) / 18 (M) | 14 (L) / 11 (M) | 9 (L) / 7 (M) | L, M |
+| M4     | 17×17 | 35 (L) / 30 (M) / 21 (Q) | 21 / 18 / 13 | 15 / 13 / 9 | L, M, Q |
+
+```python
+QR("1234",        qr_type="micro", version=1, ecc="M").save("m1.png")
+QR("HELLO WORLD", qr_type="micro").save("auto.png")   # auto-selects version
+QR("Hello!",      qr_type="micro", version=4, ecc="L").save("m4.png")
+```
+
+> **Note:** Micro QR does not support ECC H. M1 is numeric-only. M2 does not support byte mode.
 
 ### Error Correction Levels
 | Level | Recovery | Use Case |
@@ -560,4 +574,4 @@ BetterQR is released under the MIT License.
 
 ---
 **Last Updated:** 2026
-**Version:** 2.0.0
+**Version:** 1.0.0
