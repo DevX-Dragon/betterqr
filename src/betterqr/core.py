@@ -30,8 +30,10 @@ FRAME_STYLES = ('simple', 'rounded', 'double', 'shadow', 'fancy')
 ANIM_EFFECTS = ('shimmer', 'fade', 'scan', 'pulse', 'build', 'matrix', 'wave', 'blink', 'typewriter', 'rotate')
 
 def _hex_to_rgb(hex_color: str) -> tuple[int, int, int]:
-    hex_color = hex_color.lstrip("#")
-    return tuple(int(hex_color[i:i+2], 16) for i in (0, 2, 4))
+    if not hex_color: return (0, 0, 0)
+    h = hex_color.strip().lstrip("#")
+    if len(h) == 3: h = h[0]*2 + h[1]*2 + h[2]*2
+    return tuple(int(h[i:i+2], 16) for i in (0, 2, 4))
 
 def _rgb_to_hex(rgb: tuple[int, int, int]) -> str:
     return f"#{rgb[0]:02x}{rgb[1]:02x}{rgb[2]:02x}"
@@ -235,7 +237,7 @@ class QR:
         self._logo_ratio   = ratio
         self._logo_shape   = shape
         self._logo_padding = padding
-        self._logo_size_px = int(self._version_size * ratio)
+        # size_px is computed at render time from actual image dimensions; store ratio only
         self._logo_pad_color = padding_color
         self._logo_border  = border
         self._logo_border_w = border_width
@@ -245,6 +247,7 @@ class QR:
 
     def _get_logo_info(self) -> dict | None:
         if self._logo_path:
+            total_px = (self.module_count + 2 * self._border) * self._box_size
             return {
                 "logo_path": self._logo_path,
                 "ratio": self._logo_ratio,
@@ -254,7 +257,7 @@ class QR:
                 "border": self._logo_border,
                 "border_width": self._logo_border_w,
                 "box_size": self._box_size,
-                "size_px": self._logo_size_px,
+                "size_px": int(total_px * self._logo_ratio),
                 "border_modules": self._border
             }
         return None
@@ -354,7 +357,7 @@ class QR:
                 shape         = self._logo_shape,
                 padding       = self._logo_padding,
                 padding_color = self._logo_pad_color,
-                border_color  = self._logo_border,
+                border_color  = "#000000" if self._logo_border else None,
                 border_width  = self._logo_border_w,
             )
             buf = io.BytesIO()
@@ -370,7 +373,7 @@ class QR:
             img = add_frame(
                 img,
                 style            = self._frame_style,
-                frame_color      = self._frame_color,
+                frame_color      = self._frame_color or "#000000",
                 frame_width      = self._frame_width,
                 corner_radius    = self._frame_radius,
                 label            = self._label,
