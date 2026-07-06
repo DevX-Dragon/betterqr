@@ -36,7 +36,6 @@ embedded logos, animated GIFs, Micro QR, and more.
 pip install betterqr --upgrade
 ```
 
-
 ---
 
 ## Quick Start
