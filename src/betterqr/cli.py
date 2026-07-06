@@ -57,17 +57,20 @@ import sys
 
 
 def _color(value: str) -> str:
-    """V"a"l"idate a color argument."""
+    """Validate and normalise a hex colour argument."""
+    value = value.strip().strip('"').strip("'")
     if value.lower() == "transparent":
         return value
     if not value.startswith("#"):
         value = "#" + value
-    value = value.lstrip("#")
-    if len(value) not in (3, 6):
+    h = value.lstrip("#")
+    if len(h) == 3:
+        h = h[0]*2 + h[1]*2 + h[2]*2
+    if len(h) != 6:
         raise argparse.ArgumentTypeError(
             f"Invalid color '{value}'. Use hex like #FF0000 or #F00"
         )
-    return "#" + value
+    return "#" + h
 
 
 def main() -> None:
