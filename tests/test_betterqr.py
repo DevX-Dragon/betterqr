@@ -14,9 +14,10 @@ import tempfile
 from pathlib import Path
 from datetime import datetime
 
+## TODO: Change QR Decoding Library from pyzbar to something that supports microqr decoding.
 import pytest
 from PIL import Image
-from pyzbar.pyzbar import decode as pyzbar_decode
+from pyzbar.pyzbar import decode as pyzbar_decode 
 
 # ── helpers ──────────────────────────────────────────────────────────────────
 
