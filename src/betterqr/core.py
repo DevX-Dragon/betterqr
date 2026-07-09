@@ -3,8 +3,9 @@ BetterQR Core: The primary API for QR code generation.
 """
 from __future__ import annotations
 import io
+import warnings
 from typing import Literal
-from .exceptions import LowContrastWarning
+from .exceptions import LowContrastWarning, LogoECCWarning
 from .helpers import (
     wifi_string,
     WiFi,
@@ -25,6 +26,7 @@ from .render.raster import render_png as render_raster
 from .render.terminal import render_terminal
 
 ECC_LEVELS = ('L', 'M', 'Q', 'H')
+QR_TYPES = ('standard', 'micro')
 SHAPES = ('square', 'circle', 'rounded', 'diamond', 'gapped', 'star', 'vertical_bar', 'horizontal_bar')
 FRAME_STYLES = ('simple', 'rounded', 'double', 'shadow', 'fancy')
 ANIM_EFFECTS = ('shimmer', 'fade', 'scan', 'pulse', 'build', 'matrix', 'wave', 'blink', 'typewriter', 'rotate')
@@ -58,6 +60,9 @@ class QR:
     """
 
     def __init__(self, data, ecc: str = 'M', version: int | None = None, qr_type: str = "standard"):
+        if qr_type not in QR_TYPES:
+            raise ValueError(f"qr_type must be one of {QR_TYPES}")
+
         ecc = ecc.upper()
         if ecc not in ECC_LEVELS:
             raise ValueError(f"ecc must be one of {ECC_LEVELS}")
@@ -191,7 +196,6 @@ class QR:
             contrast = _contrast_ratio(lum_fill, lum_back)
 
             if contrast < 4.5:
-                import warnings
                 msg = (f"Low contrast detected (ratio: {contrast:.2f}). "
                        f"Foreground: {self._fill}, Background: {self._back}. "
                        "Consider adjusting colors for better scannability.")
@@ -242,6 +246,11 @@ class QR:
         self._logo_border  = border
         self._logo_border_w = border_width
         if self._ecc != "H":
+            warnings.warn(
+                f"Adding a logo requires ECC level H to stay scannable; "
+                f"raising from '{self._ecc}' to 'H'.",
+                LogoECCWarning,
+            )
             self._rebuild(ecc="H")
         return self
 
@@ -252,7 +261,7 @@ class QR:
                 "logo_path": self._logo_path,
                 "ratio": self._logo_ratio,
                 "shape": self._logo_shape,
-                "padding": self._logo_padding,
+                "padding_px": self._logo_padding,
                 "padding_color": self._logo_pad_color,
                 "border": self._logo_border,
                 "border_width": self._logo_border_w,
@@ -336,6 +345,7 @@ class QR:
             version       = self._version,
             module_gap    = self._gap,
             quiet_zone_color = self._quiet_color,
+            qr_type       = self._qr_type,
         )
         kw.update(overrides)
 
@@ -523,128 +533,36 @@ class QR:
         return (f"<QR v{self._version} {self._ecc} {self.module_count}×{self.module_count}"
                 f"{type_tag} {d!r}{'...' if len(self._raw)>30 else ''}>")
 
-# ──────────────────────────────────────────────────────────────────────────
-# Data helpers
-# ──────────────────────────────────────────────────────────────────────────
 
-class WiFi:
-    def __init__(self, ssid: str, password: str = "", security: str = "WPA"):
-        if not ssid: raise ValueError("SSID cannot be empty")
-        security = security.upper()
-        if security not in ("WPA", "WEP", "NOPASS", ""): security = "WPA"
-        self._s, self._p, self._sec = ssid, password, security
+def save(
+    data,
+    filepath: str,
+    *,
+    ecc: str = "M",
+    version: int | None = None,
+    qr_type: str = "standard",
+    box_size: int | None = None,
+    border: int | None = None,
+    **style_kwargs,
+) -> "QR":
+    """
+    Create and save a QR code in a single call.
 
-    def __str__(self):
-        return f"WIFI:T:{self._sec};S:{self._s};P:{self._p};;"
+        betterqr.save("https://example.com", "out.png")
+        betterqr.save("https://example.com", "out.png", fill_color="#1D4ED8")
 
-class VCard:
-    def __init__(self, name: str, org: str = "", phone: str = "",
-                 email: str = "", url: str = "", address: str = "", note: str = ""):
-        if not name: raise ValueError("name is required")
-        self.name, self.org, self.phone = name, org, phone
-        self.email, self.url, self.address, self.note = email, url, address, note
+    Equivalent to:
+        QR(data, ecc=ecc, version=version, qr_type=qr_type) \\
+            .style(**style_kwargs) \\
+            .save(filepath, box_size=box_size, border=border)
 
-    def __str__(self):
-        lines = ["BEGIN:VCARD", "VERSION:3.0", f"FN:{self.name}", f"N:{self.name};;;;"]
-        if self.org:     lines.append(f"ORG:{self.org}")
-        if self.phone:   lines.append(f"TEL:{self.phone}")
-        if self.email:   lines.append(f"EMAIL:{self.email}")
-        if self.url:     lines.append(f"URL:{self.url}")
-        if self.address: lines.append(f"ADR:{self.address}")
-        if self.note:    lines.append(f"NOTE:{self.note}")
-        lines.append("END:VCARD")
-        return "\n".join(lines)
+    Any keyword accepted by QR.style() (fill_color, module_shape,
+    gradient_color, etc.) can be passed straight through. Returns the
+    QR object in case further chaining is useful.
+    """
+    qr = QR(data, ecc=ecc, version=version, qr_type=qr_type)
+    if style_kwargs:
+        qr.style(**style_kwargs)
+    qr.save(filepath, box_size=box_size, border=border)
+    return qr
 
-class MeCard:
-    def __init__(self, name: str, phone: str = "", email: str = "",
-                 url: str = "", birthday: str = "", note: str = ""):
-        if not name: raise ValueError("name is required")
-        self.name, self.phone, self.email = name, phone, email
-        self.url, self.birthday, self.note = url, birthday, note
-
-    def __str__(self):
-        parts = [f"N:{self.name}"]
-        if self.phone:    parts.append(f"TEL:{self.phone}")
-        if self.email:    parts.append(f"EMAIL:{self.email}")
-        if self.url:      parts.append(f"URL:{self.url}")
-        if self.birthday: parts.append(f"BDAY:{self.birthday}")
-        if self.note:     parts.append(f"MEMO:{self.note}")
-        return "MECARD:" + ";".join(parts) + ";;"
-
-class GeoLocation:
-    def __init__(self, lat: float, lon: float, altitude: float | None = None):
-        self.lat, self.lon, self.alt = lat, lon, altitude
-
-    def __str__(self):
-        s = f"geo:{self.lat},{self.lon}"
-        if self.alt is not None: s += f",{self.alt}"
-        return s
-
-class Event:
-    def __init__(self, summary: str, dtstart: str, dtend: str,
-                 location: str = "", description: str = ""):
-        self.summary, self.dtstart, self.dtend = summary, dtstart, dtend
-        self.location, self.description = location, description
-
-    def __str__(self):
-        lines = ["BEGIN:VCALENDAR", "VERSION:2.0", "BEGIN:VEVENT",
-                 f"SUMMARY:{self.summary}", f"DTSTART:{self.dtstart}", f"DTEND:{self.dtend}"]
-        if self.location:    lines.append(f"LOCATION:{self.location}")
-        if self.description: lines.append(f"DESCRIPTION:{self.description}")
-        lines += ["END:VEVENT", "END:VCALENDAR"]
-        return "\n".join(lines)
-
-class SMS:
-    def __init__(self, phone: str, body: str = ""):
-        self.phone, self.body = phone, body
-
-    def __str__(self):
-        return f"sms:{self.phone}:{self.body}" if self.body else f"sms:{self.phone}"
-
-class Email:
-    def __init__(self, address: str, subject: str = "", body: str = ""):
-        self.address, self.subject, self.body = address, subject, body
-
-    def __str__(self):
-        params = []
-        if self.subject: params.append(f"subject={self.subject}")
-        if self.body:    params.append(f"body={self.body}")
-        base = f"mailto:{self.address}"
-        return base + ("?" + "&".join(params) if params else "")
-
-class Phone:
-    def __init__(self, number: str):
-        self.number = number
-
-    def __str__(self):
-        return f"tel:{self.number}"
-
-class Crypto:
-    def __init__(self, coin: str, address: str, amount: float | None = None,
-                 label: str = "", message: str = ""):
-        self.coin, self.address, self.amount = coin.lower(), address, amount
-        self.label, self.message = label, message
-
-    def __str__(self):
-        params = []
-        if self.amount is not None: params.append(f"amount={self.amount}")
-        if self.label:              params.append(f"label={self.label}")
-        if self.message:            params.append(f"message={self.message}")
-        base = f"{self.coin}:{self.address}"
-        return base + ("?" + "&".join(params) if params else "")
-
-def batch(items: list, output_dir: str = ".", prefix: str = "qr", **style_kwargs) -> list[QR]:
-    import os
-    os.makedirs(output_dir, exist_ok=True)
-    results = []
-    for i, item in enumerate(items):
-        if isinstance(item, tuple):
-            data, filename = item
-        else:
-            data, filename = item, f"{prefix}_{i}.png"
-        qr = QR(data)
-        if style_kwargs:
-            qr.style(**style_kwargs)
-        qr.save(os.path.join(output_dir, filename))
-        results.append(qr)
-    return results
