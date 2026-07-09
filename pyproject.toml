@@ -26,6 +26,13 @@ classifiers = [
     "Programming Language :: Python :: 3.13",
 ]
 
+[project.optional-dependencies]
+test = [
+    "pytest>=7.0",
+    "zxing-cpp>=2.2.0",
+    "cairosvg>=2.7.0",
+]
+
 [project.urls]
 Homepage = "https://github.com/DevX-Dragon/BetterQR"
 Issues   = "https://github.com/DevX-Dragon/BetterQR/issues"
@@ -44,6 +51,9 @@ package-dir = {"" = "src"}
 [tool.setuptools.packages.find]
 where   = ["src"]
 exclude = ["betterqr.tests*"]   # belt-and-suspenders: also exclude if tests live in src
+
+[tool.setuptools.package-data]
+betterqr = ["py.typed"]
 
 # ── test configuration ────────────────────────────────────────────────────────
 [tool.pytest.ini_options]
