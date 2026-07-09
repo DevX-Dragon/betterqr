@@ -29,9 +29,13 @@ def _lerp_color(c1: tuple, c2: tuple, t: float) -> tuple[int, int, int]:
     return tuple(int(c1[i] + (c2[i] - c1[i]) * t) for i in range(3))
 
 
-def _is_finder(r: int, c: int, size: int) -> bool:
+def _is_finder(r: int, c: int, size: int, qr_type: str = "standard") -> bool:
     """True if (r,c) is inside a 7x7 finder pattern."""
-    if r < 7 and c < 7:   return True
+    if r < 7 and c < 7:
+        return True
+    if qr_type != "standard":
+        # Micro QR and rMQR have a single finder pattern, top-left only.
+        return False
     if r < 7 and c >= size - 7: return True
     if r >= size - 7 and c < 7: return True
     return False
@@ -54,6 +58,7 @@ def render_png(
     module_gap: float = 0.15,
     quiet_zone_color: str | None = None,
     format: str = "PNG",
+    qr_type: str = "standard",
 ) -> io.BytesIO:
     try:
         from PIL import Image, ImageDraw
@@ -80,7 +85,7 @@ def render_png(
         draw.rectangle([offset, offset, offset + inner_size, offset + inner_size], fill=bg_color)
 
     def get_color(r: int, c: int) -> tuple:
-        if _is_finder(r, c, size):
+        if _is_finder(r, c, size, qr_type):
             return finder_rgb + (255,)
         if grad_rgb:
             if gradient_dir == "horizontal":
@@ -108,7 +113,7 @@ def render_png(
             x2 = x1 + box_size - 1
             y2 = y1 + box_size - 1
 
-            is_f = _is_finder(r, c, size)
+            is_f = _is_finder(r, c, size, qr_type)
             shape = "square" if is_f else module_shape
 
             if shape == "circle":
