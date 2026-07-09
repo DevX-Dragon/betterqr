@@ -10,8 +10,12 @@ import base64
 from ..extras.image_ops import _logo_ratio_limit
 
 
-def _is_finder(r: int, c: int, size: int) -> bool:
-    if r < 7 and c < 7:   return True
+def _is_finder(r: int, c: int, size: int, qr_type: str = "standard") -> bool:
+    if r < 7 and c < 7:
+        return True
+    if qr_type != "standard":
+        # Micro QR and rMQR have a single finder pattern, top-left only.
+        return False
     if r < 7 and c >= size - 7: return True
     if r >= size - 7 and c < 7: return True
     return False
@@ -37,6 +41,7 @@ def render_svg(
     version: int | None = None,
     module_gap: float = 0.15,
     quiet_zone_color: str | None = None,
+    qr_type: str = "standard",
 ) -> io.BytesIO:
     size = len(matrix)
     total_px = (size + 2 * border) * box_size
@@ -113,7 +118,7 @@ def render_svg(
                     continue
                 x = offset + c * bs
                 y = offset + r * bs
-                is_f = _is_finder(r, c, size)
+                is_f = _is_finder(r, c, size, qr_type)
                 color = finder_fill if is_f else module_fill
                 # Finders always square
                 shape = "square" if is_f else module_shape
