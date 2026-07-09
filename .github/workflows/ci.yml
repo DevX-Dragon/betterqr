@@ -20,34 +20,37 @@ jobs:
         with:
           python-version: "3.12"
 
-      # ── system deps for pyzbar (zbar shared library) ──────────────────────
+      # ── system deps for cairosvg (cairo shared library) ────────────────────
       - name: Install system dependencies
         run: |
           sudo apt-get update -qq
-          sudo apt-get install -y libzbar0
+          sudo apt-get install -y libcairo2
 
       # ── install betterqr in editable mode ─────────────────────────────────
       - name: Install BetterQR (editable)
         run: pip install -e .
 
       # ── install test-only deps (never packaged with PyPI build) ───────────
+      # zxing-cpp replaces pyzbar: pyzbar/zbar cannot decode Micro QR at all
+      # (it returns zero results even for valid Micro QR images), so it was
+      # silently unable to verify a large part of this library's output.
       - name: Install test dependencies
         run: |
           pip install \
             pytest \
             pytest-json-report \
-            pyzbar \
+            zxing-cpp \
+            cairosvg \
             Pillow \
             requests
 
       # ── run the full test suite ───────────────────────────────────────────
       - name: Run QR generation & decode tests
         run: |
-          pytest tests/test_betterqr.py \
+          pytest tests/ \
             --json-report \
             --json-report-file=report.json \
             -v
-        continue-on-error: true   # always proceed to reporting step
 
       # ── upload QR images + zip as workflow artifact ────────────────────────
       - name: Upload QR outputs artifact
