@@ -20,6 +20,23 @@ def _best_mode(data: str) -> int:
     return MODE_BYTE
 
 
+# ECI (Extended Channel Interpretation) designator for UTF-8 (ISO/IEC 18004:2015 §7.4.9,
+# assignment value 26 per the AIM ECI registry). Without an ECI segment, byte-mode data
+# defaults to ISO-8859-1 per spec; some scanners guess UTF-8 anyway, but declaring it
+# explicitly is the compliant way to encode non-ASCII text. Only applied to standard QR
+# byte-mode payloads that actually contain non-ASCII characters, so plain-ASCII data is
+# completely unaffected (no capacity cost, no bitstream change).
+_ECI_UTF8_DESIGNATOR = 26
+_ECI_MODE_INDICATOR = 0b0111
+_ECI_OVERHEAD_BITS = 4 + 8  # mode indicator + single-byte designator (value < 128)
+
+
+def _needs_eci(data: str, mode: int, qr_type: str) -> bool:
+    if mode != MODE_BYTE or qr_type != "standard":
+        return False
+    return any(ord(c) > 127 for c in data)
+
+
 def _min_version(data: str, ecc_level: str, mode: int, qr_type: str = "standard") -> int:
     """Find the minimum QR version that fits the data."""
     n = len(data.encode('utf-8')) if mode == MODE_BYTE else len(data)
@@ -96,6 +113,8 @@ def _min_version(data: str, ecc_level: str, mode: int, qr_type: str = "standard"
                 cc_bits = 8 if version <= 9 else 16
                 mode_ind_bits = 4
             needed = mode_ind_bits + cc_bits + data_bits
+            if _needs_eci(data, mode, qr_type):
+                needed += _ECI_OVERHEAD_BITS
             if needed <= available_bits:
                 return version
     raise ValueError(f"Data too long to encode in any QR version at ECC level {ecc_level}")
@@ -154,6 +173,10 @@ def encode_data(data: str, ecc_level: str, version: int | None = None, qr_type: 
     total_data_bits = data_cw_count * 8
 
     bs = BitStream()
+
+    if _needs_eci(data, mode, qr_type):
+        bs.append(_ECI_MODE_INDICATOR, 4)
+        bs.append(_ECI_UTF8_DESIGNATOR, 8)
 
     # Mode indicator (ISO 18004:2015 Table 2)
     # Standard QR: always 4 bits; Micro QR: 0 bits for M1, 1 for M2, 2 for M3, 3 for M4
