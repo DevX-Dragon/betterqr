@@ -5,6 +5,7 @@ These are not micro-benchmarks; thresholds are deliberately generous so
 they don't flake on slower/shared CI runners. Their job is to catch
 gross regressions (e.g. an accidental O(n^2) loop, a hung retry) rather
 than to track fine-grained performance.
+All tests made by DevX-Dragon and some helpers!
 """
 from __future__ import annotations
 

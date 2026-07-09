@@ -5,6 +5,7 @@ Generate a QR code, decode it with zxing-cpp, and assert the payload
 matches. This is the suite that actually catches encoding bugs (a file
 existing doesn't mean it scans correctly) — it's how the Micro QR
 capacity-miscalculation bug was originally caught.
+All tests made by DevX-Dragon and some helpers!
 """
 from __future__ import annotations
 

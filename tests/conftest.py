@@ -5,6 +5,7 @@ Decoding uses zxing-cpp rather than pyzbar/zbar: zbar has no support for
 Micro QR at all (it returns zero results even for valid Micro QR images),
 so it can't be used to verify a large part of this library's surface area.
 zxing-cpp decodes standard QR and Micro QR equally well.
+All tests made by DevX-Dragon and some helpers!
 """
 from __future__ import annotations
 

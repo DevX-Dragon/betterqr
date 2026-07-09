@@ -4,6 +4,7 @@ Generation tests
 Fast smoke tests: for every CLI option and combination, verify the command
 exits successfully and produces a non-empty output file. These do NOT
 decode the result — see test_decode_roundtrip.py for fidelity checks.
+All tests made by DevX-Dragon and some helpers!!
 """
 from __future__ import annotations
 
