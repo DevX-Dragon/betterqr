@@ -459,7 +459,7 @@ def build_matrix(codewords: list[int], version: int, ecc_level: str, qr_type: st
         logo_size_px = logo_info["size_px"]
         logo_padding_px = logo_info["padding_px"]
         box_size = logo_info["box_size"]
-        border = logo_info["border"]
+        border = logo_info["border_modules"]
 
         qr_total_size_px = size * box_size + 2 * border * box_size
         logo_start_px = (qr_total_size_px - logo_size_px) / 2
