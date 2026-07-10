@@ -10,9 +10,7 @@ All tests made by DevX-Dragon and some helpers!
 from __future__ import annotations
 
 import time
-
 import pytest
-
 import betterqr
 
 

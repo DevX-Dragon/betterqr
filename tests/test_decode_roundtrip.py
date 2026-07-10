@@ -10,7 +10,6 @@ All tests made by DevX-Dragon and some helpers!
 from __future__ import annotations
 
 import pytest
-
 from conftest import out, cli, decode, record
 
 

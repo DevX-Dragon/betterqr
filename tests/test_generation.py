@@ -7,11 +7,8 @@ decode the result — see test_decode_roundtrip.py for fidelity checks.
 All tests made by DevX-Dragon and some helpers!!
 """
 from __future__ import annotations
-
 from pathlib import Path
-
 import pytest
-
 from conftest import out, cli
 
 
