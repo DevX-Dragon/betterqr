@@ -160,6 +160,38 @@ class TestFrameAndLabel:
         assert res.returncode == 0, res.stderr
         _assert_file_ok(f)
 
+    def test_label_is_actually_visible_outside_frame(self, tmp_path):
+        """Regression test: the label must render in its own reserved band,
+        not overlap/hide behind the frame border stroke (see devlog bug where
+        label text was drawn at the same y-position as the frame border)."""
+        from PIL import Image
+        import numpy as np
+        from betterqr.extras.image_ops import add_frame
+
+        qr = Image.new("RGBA", (200, 200), (255, 255, 255, 255))
+        img = add_frame(
+            qr, style="simple", frame_color="#0000FF", frame_width=40,
+            label="HELLO WORLD", label_color="#FF0000", label_size=20,
+            label_position="bottom", background_color="#FFFFFF",
+        )
+        arr = np.array(img.convert("RGB"))
+        h = arr.shape[0]
+
+        red_mask = (arr[:, :, 0] > 150) & (arr[:, :, 1] < 100) & (arr[:, :, 2] < 100)
+        blue_mask = (arr[:, :, 2] > 150) & (arr[:, :, 0] < 100)
+
+        assert red_mask.any(), "label text was not rendered at all"
+
+        red_rows = np.where(red_mask.any(axis=1))[0]
+        blue_rows = np.where(blue_mask.any(axis=1))[0]
+
+        # The label band must sit below the frame's bottom border, not overlap it.
+        assert red_rows.min() > blue_rows.max(), (
+            "label text overlaps the frame border instead of sitting in its own band"
+        )
+        # And it should be near the bottom of the canvas, not cut off.
+        assert red_rows.max() > h - 40
+
 
 ANIM_EFFECTS = ["shimmer", "fade", "scan", "pulse", "build",
                 "matrix", "wave", "blink", "typewriter", "rotate"]
