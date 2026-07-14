@@ -81,8 +81,8 @@ def _summary_embed(pytest_report: dict, qr_results: list[dict]) -> dict:
         "title": "🚀 BetterQR CI/CD Report",
         "description": (
             "Automated end-to-end QR generation & decode verification.\n"
-            "Every CLI command is exercised, the PNG decoded, and the result checked.\n"
-            "Full per-QR breakdown follows in subsequent messages."
+            "Every CLI command is ran, the PNG decoded, and the result checked.\n"
+            "Made by DevX-Dragon"
         ),
         "color": color,
         "fields": [
