@@ -3,6 +3,7 @@ QR Code matrix construction: all function patterns, data placement, masking.
 Fully compliant with ISO/IEC 18004:2015.
 """
 from __future__ import annotations
+import functools
 from .tables import (
     ALIGNMENT_POSITIONS, FORMAT_INFO, VERSION_INFO, ECC_BITS,
     MICRO_ECC_TABLE, MICRO_ALIGNMENT_POSITIONS, MICRO_FORMAT_INFO, MICRO_VERSION_INFO
@@ -228,20 +229,29 @@ def _data_placement_order(size: int, reserved, qr_type: str = "standard") -> lis
     return order
 
 
+@functools.lru_cache(maxsize=512)
+def _mask_grid(size: int, mask_pattern: int, qr_type: str) -> tuple:
+    """
+    Boolean grid of which cells a mask flips. Depends only on
+    (size, mask_pattern, qr_type), never on the data, so it's cached —
+    generating many codes at the same version becomes a cache lookup
+    instead of re-deriving ~30k+ mask conditions each time.
+    """
+    condition = _MICRO_MASK_CONDITIONS[mask_pattern] if qr_type == "micro" else _MASK_CONDITIONS[mask_pattern]
+    return tuple(tuple(condition(r, c) for c in range(size)) for r in range(size))
+
+
 def _apply_mask(grid, mask_pattern: int, reserved, qr_type: str = "standard") -> list[list[int]]:
     """Return a copy of grid with mask applied to non-reserved modules."""
-    if qr_type == "micro":
-        condition = _MICRO_MASK_CONDITIONS[mask_pattern]
-    else:
-        condition = _MASK_CONDITIONS[mask_pattern]
     size = len(grid)
-    result = [row[:] for row in grid]
-    for r in range(size):
-        for c in range(size):
-            if not reserved[r][c] and grid[r][c] != _UNSET:
-                if condition(r, c):
-                    result[r][c] ^= 1
-    return result
+    mask = _mask_grid(size, mask_pattern, qr_type)
+    return [
+        [
+            (v ^ 1) if (v != _UNSET and not reserved[r][c] and mask[r][c]) else v
+            for c, v in enumerate(grid[r])
+        ]
+        for r in range(size)
+    ]
 
 
 def _penalty_score(grid) -> int:
@@ -280,25 +290,31 @@ def _penalty_score(grid) -> int:
             if v == grid[r][c+1] == grid[r+1][c] == grid[r+1][c+1]:
                 score += 3
 
-    # Rule 3: specific patterns in rows/columns
-    pat1 = [1,0,1,1,1,0,1,0,0,0,0]
-    pat2 = [0,0,0,0,1,0,1,1,1,0,1]
+    # Rule 3: specific patterns in rows/columns.
+    # Track an 11-bit rolling window as a plain int instead of slicing out
+    # a fresh 11-element list (or building a string) at every position —
+    # this was the single biggest hotspot in mask scoring.
+    _PAT1 = 0b10111010000  # 1,0,1,1,1,0,1,0,0,0,0
+    _PAT2 = 0b00001011101  # 0,0,0,0,1,0,1,1,1,0,1
+    _WINDOW_MASK = 0x7FF   # 11 bits
+
+    def _count_patterns(values) -> int:
+        n = 0
+        window = 0
+        for i, v in enumerate(values):
+            window = ((window << 1) | v) & _WINDOW_MASK
+            if i >= 10 and (window == _PAT1 or window == _PAT2):
+                n += 1
+        return n
+
     for row in grid:
-        row_list = row
-        for i in range(size - 10):
-            seg = row_list[i:i+11]
-            if seg == pat1 or seg == pat2:
-                score += 40
-    for c in range(size):
-        col = [grid[r][c] for r in range(size)]
-        for i in range(size - 10):
-            seg = col[i:i+11]
-            if seg == pat1 or seg == pat2:
-                score += 40
+        score += 40 * _count_patterns(row)
+    for col in zip(*grid):  # C-level transpose, avoids manual grid[r][c] indexing
+        score += 40 * _count_patterns(col)
 
     # Rule 4: proportion of dark modules
     total = size * size
-    dark = sum(grid[r][c] for r in range(size) for c in range(size))
+    dark = sum(sum(row) for row in grid)
     percent = dark * 100 // total
     prev5 = (percent // 5) * 5
     next5 = prev5 + 5
