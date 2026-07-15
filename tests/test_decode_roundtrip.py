@@ -9,7 +9,10 @@ All tests made by DevX-Dragon and some helpers!
 """
 from __future__ import annotations
 
+import numpy as np
 import pytest
+from PIL import Image
+
 from conftest import out, cli, decode, record
 
 
@@ -166,6 +169,32 @@ class TestStyledRoundTrip:
         decoded = decode(f)
         record("frame_roundtrip", data, data, decoded, f)
         assert decoded == data
+
+    def test_frame_label_actually_visible(self):
+        """Regression test for a bug where the label was drawn at the same
+        y-position as the frame's border stroke, so it scanned fine (label
+        text doesn't affect the QR payload) but was never actually visible
+        to a person looking at the image. Decodes AND checks the label band
+        for real, contrasting-colour pixels distinct from the frame."""
+        data = "framed and labelled"
+        f = out("frame_label_visible.png")
+        res = cli(
+            data, f,
+            "--frame", "fancy", "--frame-color", "#0000FF",
+            "--label", "Scan me", "--label-color", "#FF0000",
+        )
+        assert res.returncode == 0, res.stderr
+        decoded = decode(f)
+        record("frame_label_visible", data, data, decoded, f)
+        assert decoded == data
+
+        arr = np.array(Image.open(f).convert("RGB"))
+        red_rows = np.where(((arr[:, :, 0] > 150) & (arr[:, :, 1] < 100) & (arr[:, :, 2] < 100)).any(axis=1))[0]
+        blue_rows = np.where(((arr[:, :, 2] > 150) & (arr[:, :, 0] < 100)).any(axis=1))[0]
+        assert red_rows.size, "label text was not rendered at all"
+        assert red_rows.min() > blue_rows.max(), (
+            "label overlaps the frame border instead of sitting in its own band"
+        )
 
 
 class TestDataTypeRoundTrip:
