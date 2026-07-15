@@ -44,6 +44,24 @@ def _trunc(text: str, limit: int = 40) -> str:
     return text[:limit] + "…" if len(text) > limit else text
 
 
+def _failed_test_names(pytest_report: dict, limit: int = 15) -> list[str]:
+    """
+    Names of tests that actually failed/errored, straight from pytest's own
+    per-test outcomes (report.json's "tests" list) — NOT from qr_results.
+
+    This matters because qr_results only ever contains tests that call
+    record() (the decode-roundtrip suite). A failure in test_unit.py,
+    test_generation.py, or test_performance.py bumps the summary's failed
+    count but would otherwise never show up anywhere in the report, making
+    it look like "1 failed" with every itemized result still green.
+    """
+    names = [
+        t["nodeid"] for t in pytest_report.get("tests", [])
+        if t.get("outcome") in ("failed", "error")
+    ]
+    return names[:limit]
+
+
 def _post(webhook_url: str, payload: dict, files: dict | None = None) -> None:
     """POST one request to the webhook; raises on HTTP error."""
     if files:
@@ -77,12 +95,12 @@ def _summary_embed(pytest_report: dict, qr_results: list[dict]) -> dict:
     qr_total  = len(qr_results)
     qr_status = "✅ All decoded OK" if qr_passed == qr_total else f"⚠️ {qr_total - qr_passed} decode failure(s)"
 
-    return {
+    embed: dict = {
         "title": "🚀 BetterQR CI/CD Report",
         "description": (
             "Automated end-to-end QR generation & decode verification.\n"
-            "Every CLI command is ran, the PNG decoded, and the result checked.\n"
-            "Made by DevX-Dragon"
+            "Every CLI command is exercised, the PNG decoded, and the result checked.\n"
+            "Full per-QR breakdown follows in subsequent messages."
         ),
         "color": color,
         "fields": [
@@ -95,6 +113,25 @@ def _summary_embed(pytest_report: dict, qr_results: list[dict]) -> dict:
         "footer": {"text": "BetterQR Automated Verification System"},
         "timestamp": datetime.now(timezone.utc).isoformat(),
     }
+
+    # A test can fail without ever touching qr_results (record() is only
+    # called by the decode-roundtrip suite) — so name it explicitly here,
+    # otherwise "❌ 1 Failed" shows up with no itemized entry anywhere below.
+    if not all_ok:
+        failed_names = _failed_test_names(pytest_report)
+        if failed_names:
+            value = "\n".join(f"`{_trunc(n, 90)}`" for n in failed_names)
+            if len(value) > MAX_FIELD_VALUE:
+                value = value[: MAX_FIELD_VALUE - 1] + "…"
+            embed["fields"].append({"name": "🧨 Failed / errored tests", "value": value, "inline": False})
+        else:
+            embed["fields"].append({
+                "name": "🧨 Failed / errored tests",
+                "value": "(not reported by pytest-json-report — check the CI log)",
+                "inline": False,
+            })
+
+    return embed
 
 
 def _chunk_result_embeds(
