@@ -41,6 +41,7 @@ jobs:
             pytest-json-report \
             zxing-cpp \
             cairosvg \
+            numpy \
             Pillow \
             requests
 
