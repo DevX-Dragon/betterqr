@@ -81,26 +81,45 @@ def _post(webhook_url: str, payload: dict, files: dict | None = None) -> None:
 
 def _summary_embed(pytest_report: dict, qr_results: list[dict]) -> dict:
     stats    = pytest_report.get("summary", {})
-    total    = stats.get("total",  0)
+    total    = stats.get("total", stats.get("collected", 0))
     passed   = stats.get("passed", 0)
     failed   = stats.get("failed", 0)
     errors   = stats.get("error",  0)
     duration = round(pytest_report.get("duration", 0), 2)
+    exitcode = pytest_report.get("exitcode")
 
-    all_ok     = (failed + errors) == 0
-    color      = 0x2ECC71 if all_ok else 0xE74C3C
-    status_val = "✅ All Passed" if all_ok else f"❌ {failed + errors} Failed"
+    # pytest's own exit code is the ground truth. 0 = all collected tests
+    # passed. Anything else — including "0 collected, 0 failed" — means the
+    # run did NOT verify anything, and must never be reported as a pass.
+    # (exitcode 4 = usage error / bad path, 5 = no tests collected.)
+    nothing_ran = total == 0
+    all_ok = (exitcode == 0) and (failed + errors == 0) and not nothing_ran
+
+    if nothing_ran:
+        color = 0xE74C3C
+        status_val = f"⚠️ 0 tests ran (exitcode {exitcode})"
+    elif all_ok:
+        color = 0x2ECC71
+        status_val = "✅ All Passed"
+    else:
+        color = 0xE74C3C
+        status_val = f"❌ {failed + errors} Failed"
 
     qr_passed = sum(1 for r in qr_results if r["passed"])
     qr_total  = len(qr_results)
-    qr_status = "✅ All decoded OK" if qr_passed == qr_total else f"⚠️ {qr_total - qr_passed} decode failure(s)"
+    if qr_total == 0:
+        qr_status = "— no QR results recorded"
+    elif qr_passed == qr_total:
+        qr_status = "✅ All decoded OK"
+    else:
+        qr_status = f"⚠️ {qr_total - qr_passed} decode failure(s)"
 
     embed: dict = {
         "title": "🚀 BetterQR CI/CD Report",
         "description": (
             "Automated end-to-end QR generation & decode verification.\n"
-            "Every CLI command is exercised, the PNG decoded, and the result checked.\n"
-            "Full per-QR breakdown follows in subsequent messages."
+            "Every CLI command is ran, the PNG decoded, and the result checked.\n"
+            "Designed by DevX-Dragon"
         ),
         "color": color,
         "fields": [
@@ -114,10 +133,23 @@ def _summary_embed(pytest_report: dict, qr_results: list[dict]) -> dict:
         "timestamp": datetime.now(timezone.utc).isoformat(),
     }
 
+    if nothing_ran:
+        embed["fields"].append({
+            "name": "🧨 Nothing was verified",
+            "value": (
+                "pytest collected **0 tests** (exitcode "
+                f"`{exitcode}`). This usually means the test path was wrong, "
+                "a plugin/dependency failed to install, or a `conftest.py` "
+                "import blew up before collection. Check the raw CI log — "
+                "this run proves nothing, despite looking green before this fix."
+            ),
+            "inline": False,
+        })
+
     # A test can fail without ever touching qr_results (record() is only
     # called by the decode-roundtrip suite) — so name it explicitly here,
     # otherwise "❌ 1 Failed" shows up with no itemized entry anywhere below.
-    if not all_ok:
+    if not all_ok and not nothing_ran:
         failed_names = _failed_test_names(pytest_report)
         if failed_names:
             value = "\n".join(f"`{_trunc(n, 90)}`" for n in failed_names)
@@ -141,7 +173,12 @@ def _chunk_result_embeds(
     """
     Return a list of embeds, each covering a slice of qr_results.
     One field per QR result; chunks of up to MAX_FIELDS_PER_EMBED.
+    Returns [] when there's nothing to report, instead of one empty,
+    pointless "QR Results — Part 1/1" embed.
     """
+    if not qr_results:
+        return []
+
     stats  = pytest_report.get("summary", {})
     failed = stats.get("failed", 0) + stats.get("error", 0)
     color  = 0x2ECC71 if failed == 0 else 0xE74C3C
