@@ -31,6 +31,10 @@ embedded logos, animated GIFs, Micro QR, and more.
 
 ---
 
+## Examples
+
+![Gallery](https://cdn.hackclub.com/019f66b9-6f53-71ef-ac25-5b19351a6ee2/image.png)
+
 ## Installation
 
 ```bash
