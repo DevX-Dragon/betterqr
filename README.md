@@ -161,7 +161,7 @@ QR(VCard("Jane Doe", phone="+15550199", email="jane@example.com")).save("vcard.p
 > Micro QR cannot be scanned using normal phone cameras
 
 > [!TIP]
-> Use a dedicated [Micro QR scanner](https://www.dynamsoft.com/barcode-reader/barcode-types/micro-qr-code/) to test the microqr codes
+> Use a dedicated [Micro QR Scanner](https://www.dynamsoft.com/barcode-reader/barcode-types/micro-qr-code/) to test the Micro QR codes
 
 
 ---
