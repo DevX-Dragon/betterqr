@@ -1,4 +1,4 @@
-<div style="text-align: center;">
+<div align="center">
 
 ![image](https://cdn.hackclub.com/019f5645-9668-7849-8133-f085487ec59c/image.png)
 [![Python Version](https://img.shields.io/badge/python-3.10%2B-blue)](https://www.python.org/)
@@ -162,19 +162,8 @@ QR(VCard("Jane Doe", phone="+15550199", email="jane@example.com")).save("vcard.p
 
 ---
 
-
-<div style="text-align: center;">
-    
 ## Documentation
 Check out the [DOCUMENTATION](docs/DOCUMENTATION.md) for an better overview of BetterQR
 
-</div>
-
-
-<div style="text-align: center;">
-    
 ## License
 Regsitred under MIT LISCENSE — see [LICENSE](LICENSE)
-
-</div>
-
