@@ -158,8 +158,7 @@ QR(VCard("Jane Doe", phone="+15550199", email="jane@example.com")).save("vcard.p
 
 > [!NOTE]
 > Micro QR does not support ECC H. Use standard QR for logos.
-
-> **Note:** Micro QR cannot be scanned using normal phone scanners; Only scannable using specialized scanners or microQR specific scanners.
+> Micro QR cannot be scanned using normal phone cameras
 
 ---
 
