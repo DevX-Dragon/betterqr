@@ -5,6 +5,7 @@
 [![License](https://img.shields.io/github/license/DevX-Dragon/BetterQR)](https://github.com/DevX-Dragon/BetterQR/main/LICENSE)
 [![PyPI - Version](https://img.shields.io/pypi/v/betterqr)](https://pypi.org/project/betterqr/)
 [![PyPI - Downloads](https://img.shields.io/pypi/dm/betterqr)](https://pypi.org/project/betterqr/)
+[![CI](https://github.com/DevX-Dragon/betterqr/actions/workflows/ci.yml/badge.svg)](https://github.com/DevX-Dragon/betterqr/actions/workflows/ci.yml)
 [![Hackatime - Time Spent](https://hackatime.hackclub.com/api/v1/badge/U0A0M7YSS84/devx-dragon/betterqr)](https://hackatime.hackclub.com/my/projects/33.BetterQR)
 
 </div>
