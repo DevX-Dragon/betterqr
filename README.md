@@ -50,6 +50,25 @@ pip install betterqr --upgrade
 
 ---
 
+## Comparission
+## Why BetterQR?
+
+| | BetterQR | `qrcode` | `segno` |
+|---|:---:|:---:|:---:|
+| Zero external QR-gen dependencies | ✅ | ✅ | ✅ |
+| Module shapes (circle, star, diamond, etc.) | ✅ | ❌ | ❌ |
+| Gradients | ✅ | ❌ | ❌ |
+| Logo embedding | ✅ | Manual (Pillow) | ❌ |
+| Frames & labels | ✅ | ❌ | ❌ |
+| Animated GIF output | ✅ | ❌ | ❌ |
+| Micro QR (M1–M4) | ✅ | ❌ | ✅ |
+| WiFi / vCard / MeCard / SMS / Email / Phone helpers | ✅ | ❌ | Partial |
+| CLI included | ✅ | ✅ | ✅ |
+| SVG / PDF / EPS output | ✅ | SVG only | ✅ |
+
+*(Double-check the `qrcode`/`segno` columns against their current docs before publishing —
+this is accurate as of their last stable releases I'm aware of, but library features change.)*
+
 ## Quick Start
 
 ### CLI
