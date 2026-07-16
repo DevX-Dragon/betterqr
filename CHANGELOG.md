@@ -19,6 +19,7 @@ All notable changes to BetterQR will be documented in this file.
 - `qr_type="rmqr"` was reachable from the public API but the implementation was incomplete and crashed; it's now explicitly rejected with a clear error instead.
 
 ### Added
+- Now Supports MicroQR Code Generations.
 - PDF and EPS output formats.
 - Kanji mode (standard QR only) — Shift-JIS-encodable text now uses 13 bits/character instead of being encoded as UTF-8 bytes.
 - ECI (UTF-8) declaration for non-ASCII byte-mode payloads (standard QR only), for stricter spec compliance with non-Latin text.
