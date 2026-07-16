@@ -1,0 +1,298 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BetterQR — QR codes worth a second look</title>
+<meta name="description" content="BetterQR is a pure-Python QR code generator with shapes, gradients, logos, frames, animation, and Micro QR — zero external QR-generation dependencies, and every code still scans.">
+
+<link rel="icon" type="image/png" href="assets/brand/favicon-32.png">
+<link rel="apple-touch-icon" href="assets/brand/apple-touch-icon.png">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+<link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+
+<nav class="nav">
+  <div class="wrap">
+    <a class="brand" href="#top">
+      <img src="assets/brand/mark-512.png" alt="">
+      BetterQR
+    </a>
+    <div class="nav-links">
+      <a href="#features" class="nav-links-text">Features</a>
+      <a href="#code" class="nav-links-text">Code</a>
+      <a href="#micro" class="nav-links-text">Micro QR</a>
+      <div class="nav-actions">
+        <a href="https://pypi.org/project/betterqr/" class="nav-links-text">PyPI</a>
+        <a href="https://github.com/DevX-Dragon/BetterQR" class="btn btn-ghost">GitHub</a>
+      </div>
+    </div>
+  </div>
+</nav>
+
+<main id="top">
+
+  <!-- ============ HERO ============ -->
+  <section class="hero">
+    <div class="wrap hero-grid">
+      <div>
+        <span class="eyebrow">pure python · zero qr dependencies</span>
+        <h1>Every QR code is a grid of squares.<br><em>Yours doesn't have to be.</em></h1>
+        <p class="hero-sub">
+          BetterQR generates codes with real shapes, gradients, embedded logos,
+          decorative frames, and animated GIFs — plus Micro QR and one-line
+          WiFi, vCard, and geo codes. Style it however you like; it still
+          has to scan, and it does.
+        </p>
+        <div class="hero-actions">
+          <div class="install-box">
+            <span><span class="prompt">$</span> pip install <span class="pkg">betterqr</span></span>
+            <button class="copy-btn" id="copyInstall" aria-label="Copy install command" title="Copy">
+              <svg id="copyIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+            </button>
+          </div>
+          <a href="https://github.com/DevX-Dragon/BetterQR" class="btn btn-primary">View on GitHub</a>
+        </div>
+        <p class="hero-proof">21×21 to 177×177 modules · ECC L / M / Q / H · PNG · JPG · SVG · PDF · EPS · GIF</p>
+      </div>
+
+      <div>
+        <div class="mosaic-wrap">
+          <div class="mosaic" id="mosaic">
+            <div class="mosaic-tile"><img src="assets/mosaic/square_lav.png" alt="Square-module QR code, decoded text: WIFI READY" loading="lazy"></div>
+            <div class="mosaic-tile"><img src="assets/mosaic/circle.png" alt="Circle-module QR code, decoded text: https://betterqr.dev" loading="lazy"></div>
+            <div class="mosaic-tile"><img src="assets/mosaic/rounded_grad.png" alt="Rounded-module gradient QR code, decoded text: SCAN ME" loading="lazy"></div>
+            <div class="mosaic-tile"><img src="assets/mosaic/diamond.png" alt="Diamond-module QR code, decoded text: PURE PYTHON" loading="lazy"></div>
+
+            <div class="mosaic-tile"><img src="assets/mosaic/star_magenta.png" alt="Star-module QR code, decoded text: HELLO WORLD" loading="lazy"></div>
+            <div class="mosaic-tile"><img src="assets/mosaic/gapped.png" alt="Gapped-module QR code, decoded text: MICRO QR" loading="lazy"></div>
+            <div class="mosaic-tile"><img src="assets/mosaic/vbar_grad.png" alt="Vertical-bar gradient QR code, decoded text: 10 GIF FX" loading="lazy"></div>
+            <div class="mosaic-tile"><img src="assets/mosaic/hbar.png" alt="Horizontal-bar QR code, decoded text: 8 SHAPES" loading="lazy"></div>
+
+            <div class="mosaic-tile"><img src="assets/mosaic/circle_finder.png" alt="Circle-module QR code with contrast finder color, decoded text: FRAMES" loading="lazy"></div>
+            <div class="mosaic-tile"><img src="assets/mosaic/rounded_radial.png" alt="Rounded-module radial gradient QR code, decoded text: V1-V40" loading="lazy"></div>
+            <div class="mosaic-tile"><img src="assets/mosaic/diamond_radial.png" alt="Diamond-module radial gradient QR code, decoded text: ECC L-H" loading="lazy"></div>
+            <div class="mosaic-tile"><img src="assets/mosaic/rounded_finder.png" alt="Rounded-module QR code with contrast finder color, decoded text: OPEN SOURCE" loading="lazy"></div>
+          </div>
+          <div class="scan-sweep" aria-hidden="true"></div>
+        </div>
+        <p class="mosaic-caption">Every tile above is a real PNG made with BetterQR — scan one and see for yourself.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ SPEC STRIP ============ -->
+  <div class="spec-strip">
+    <div class="wrap">
+      <div class="spec-row">
+        <span>versions 1–40 + micro M1–M4</span>
+        <span>8 module shapes</span>
+        <span>4 gradient directions</span>
+        <span>10 animation effects</span>
+        <span>6 output formats</span>
+        <span>8 data-type helpers</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ FEATURES ============ -->
+  <section id="features">
+    <div class="wrap">
+      <div class="section-head reveal">
+        <span class="eyebrow">what's built in</span>
+        <h2>One library, every finish.</h2>
+        <p>No plugins to install and no post-processing pipeline — styling, logos, frames, and animation all live in the same call chain as the QR generation itself.</p>
+      </div>
+
+      <div class="feature-grid">
+
+        <div class="card reveal">
+          <h3>Module shapes</h3>
+          <div class="card-visual"><div class="shape-row">
+            <img src="assets/features/shape_square.png" alt="Square modules">
+            <img src="assets/features/shape_circle.png" alt="Circle modules">
+            <img src="assets/features/shape_rounded.png" alt="Rounded modules">
+            <img src="assets/features/shape_diamond.png" alt="Diamond modules">
+            <img src="assets/features/shape_star.png" alt="Star modules">
+            <img src="assets/features/shape_gapped.png" alt="Gapped modules">
+            <img src="assets/features/shape_vertical_bar.png" alt="Vertical bar modules">
+            <img src="assets/features/shape_horizontal_bar.png" alt="Horizontal bar modules">
+          </div></div>
+          <p class="desc">square, circle, rounded, diamond, star, gapped, and two bar styles — swap with one keyword argument.</p>
+        </div>
+
+        <div class="card reveal">
+          <h3>Gradients</h3>
+          <div class="card-visual"><img src="assets/features/gradient_showcase.png" alt="QR code with a radial violet-to-magenta gradient fill"></div>
+          <p class="desc">Horizontal, vertical, diagonal, or radial — fade between any two colors across the whole code.</p>
+        </div>
+
+        <div class="card reveal">
+          <h3>Logo embedding</h3>
+          <div class="card-visual"><img src="assets/features/logo_showcase.png" alt="QR code with a logo embedded in the center"></div>
+          <p class="desc">Drop a PNG or JPG in the center. BetterQR raises error correction automatically so it still scans.</p>
+        </div>
+
+        <div class="card reveal">
+          <h3>Frames &amp; labels</h3>
+          <div class="card-visual card-visual--tall"><img src="assets/features/frame_showcase.png" alt="Framed QR code with a caption label reading Visit our site"></div>
+          <p class="desc">simple, rounded, double, shadow, or fancy — with a text label above or below, any color.</p>
+        </div>
+
+        <div class="card reveal">
+          <h3>Animated GIFs</h3>
+          <div class="card-visual card-visual--tall"><img src="assets/features/anim_showcase.gif" alt="Looping animated QR code using the shimmer effect"></div>
+          <p class="desc">shimmer, fade, scan, pulse, build, matrix, wave, blink, typewriter, rotate — the last frame is always fully scannable.</p>
+        </div>
+
+        <div class="card reveal">
+          <h3>Data helpers</h3>
+          <div class="card-visual"><div class="helper-row">
+            <img src="assets/features/data_wifi.png" alt="WiFi QR code">
+            <img src="assets/features/data_geo.png" alt="Geolocation QR code">
+            <img src="assets/features/data_sms.png" alt="SMS QR code">
+            <img src="assets/features/data_email.png" alt="Email QR code">
+          </div></div>
+          <p class="desc">WiFi, vCard, MeCard, geolocation, SMS, email, phone, and crypto — pass the helper object straight in.</p>
+        </div>
+
+        <div class="card reveal">
+          <h3>Output formats</h3>
+          <div class="card-visual"><div class="chip-row" style="justify-content:center">
+            <span class="chip">.png</span><span class="chip">.jpg</span><span class="chip">.svg</span>
+            <span class="chip">.pdf</span><span class="chip">.eps</span><span class="chip">.gif</span>
+          </div></div>
+          <p class="desc">Raster for the web, vector for print — <code>.save()</code> picks the renderer from the file extension.</p>
+        </div>
+
+        <div class="card reveal">
+          <h3>Colour control</h3>
+          <div class="card-visual"><div class="chip-row" style="justify-content:center">
+            <span class="chip">#6D28D9</span><span class="chip">#D97</span><span class="chip">transparent</span>
+          </div></div>
+          <p class="desc">3- or 6-digit hex, transparent PNG backgrounds, and a separate colour just for the finder squares.</p>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ CODE ============ -->
+  <section id="code">
+    <div class="wrap">
+      <div class="section-head reveal">
+        <span class="eyebrow">use it your way</span>
+        <h2>Command line or Python — same feature set.</h2>
+        <p>Reach for the CLI for a one-off code, or the fluent API when you're generating them in bulk.</p>
+      </div>
+
+      <div class="code-panel reveal">
+        <div class="code-tabs">
+          <button class="code-tab active" data-tab="cli">CLI</button>
+          <button class="code-tab" data-tab="python">Python</button>
+        </div>
+        <div class="code-body">
+          <div class="code-block active" id="tab-cli"><pre><span class="c-comment"># styled with a gradient</span>
+betterqr <span class="c-str">"Hello"</span> my_qr.png <span class="c-flag">--gradient</span> <span class="c-str">"#FF6B6B"</span> <span class="c-str">"#4ECDC4"</span>
+
+<span class="c-comment"># logo + frame + label in one line</span>
+betterqr <span class="c-str">"https://mysite.com"</span> qr.png <span class="c-flag">--logo</span> logo.png <span class="c-flag">-e</span> H <span class="c-flag">--frame</span> fancy <span class="c-flag">--label</span> <span class="c-str">"Scan Me!"</span>
+
+<span class="c-comment"># WiFi, straight from the CLI</span>
+betterqr <span class="c-flag">--wifi</span> MySSID MyPassword wifi.png
+
+<span class="c-comment"># animated GIF</span>
+betterqr <span class="c-str">"Animated QR"</span> animated.gif <span class="c-flag">--effect</span> matrix <span class="c-flag">--fps</span> 12</pre></div>
+
+          <div class="code-block" id="tab-python"><pre><span class="c-fn">from</span> betterqr <span class="c-fn">import</span> QR, WiFi
+
+<span class="c-comment"># chain style, logo, frame, and label</span>
+(QR(<span class="c-str">"https://mysite.com"</span>, ecc=<span class="c-str">"H"</span>)
+    .style(shape=<span class="c-str">"circle"</span>, fill=<span class="c-str">"#6C3082"</span>)
+    .logo(<span class="c-str">"logo.png"</span>, ratio=<span class="c-str">0.25</span>, shape=<span class="c-str">"rounded"</span>)
+    .frame(<span class="c-str">"fancy"</span>)
+    .label(<span class="c-str">"Scan Me!"</span>)
+    .save(<span class="c-str">"framed.png"</span>))
+
+<span class="c-comment"># data helpers pass in directly</span>
+QR(WiFi(<span class="c-str">"MyNet"</span>, <span class="c-str">"MyPass"</span>, <span class="c-str">"WPA"</span>)).save(<span class="c-str">"wifi.png"</span>)
+
+<span class="c-comment"># animation</span>
+QR(<span class="c-str">"Hello"</span>, ecc=<span class="c-str">"H"</span>, version=<span class="c-str">4</span>).animate(<span class="c-str">"matrix"</span>, fps=<span class="c-str">15</span>).save(<span class="c-str">"anim.gif"</span>)</pre></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ MICRO QR ============ -->
+  <section id="micro">
+    <div class="wrap">
+      <div class="micro-banner reveal">
+        <div>
+          <span class="eyebrow">for when space is tight</span>
+          <h2 style="margin-top:14px;">Micro QR, done properly.</h2>
+          <p style="margin-top:14px; color:var(--ink-soft); font-size:15.5px;">
+            All four Micro QR versions (M1–M4) with correct auto-version
+            selection, so short payloads don't get padded out to a full-size
+            symbol.
+          </p>
+          <ul>
+            <li>M1 — up to 5 numeric characters</li>
+            <li>M4 — up to 21 alphanumeric or 15 byte-mode characters</li>
+            <li>ECC L / M / Q (Micro QR has no ECC H)</li>
+          </ul>
+        </div>
+        <div class="pair-row">
+          <figure>
+            <img src="assets/features/micro_qr.png" alt="Micro QR code, version M2">
+            <figcaption>micro · 13×13</figcaption>
+          </figure>
+          <figure>
+            <img src="assets/features/standard_qr_small.png" alt="Standard QR code, version 1">
+            <figcaption>standard · 21×21</figcaption>
+          </figure>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ FINAL CTA ============ -->
+  <section style="padding-top:20px;">
+    <div class="wrap" style="text-align:center;">
+      <h2 class="reveal">Generate your first code in one line.</h2>
+      <div class="hero-actions reveal" style="justify-content:center; margin-top:26px;">
+        <div class="install-box">
+          <span><span class="prompt">$</span> pip install <span class="pkg">betterqr</span></span>
+          <button class="copy-btn" id="copyInstall2" aria-label="Copy install command" title="Copy">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+          </button>
+        </div>
+        <a href="https://github.com/DevX-Dragon/BetterQR" class="btn btn-primary">Read the docs</a>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  <div class="wrap footer-row">
+    <div class="footer-brand">
+      <img src="assets/brand/mark-512.png" alt="">
+      BetterQR · MIT License
+    </div>
+    <div class="footer-links">
+      <a href="https://github.com/DevX-Dragon/BetterQR">GitHub</a>
+      <a href="https://pypi.org/project/betterqr/">PyPI</a>
+      <a href="https://github.com/DevX-Dragon/BetterQR/issues">Issues</a>
+    </div>
+  </div>
+</footer>
+
+<script src="js/script.js"></script>
+</body>
+</html>

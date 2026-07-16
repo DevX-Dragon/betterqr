@@ -7,8 +7,8 @@ name = "betterqr"
 description = "The upgraded qrcode library for Python"
 readme = "README.md"
 requires-python = ">=3.10"
-keywords = ["qrcode", "qrcode generator", "animated qrcode", "betterqr", "devx-dragon", "Sri Lanka"]
-version = "1.0.0"
+keywords = ["qrcode", "qrcode generator", "animated qrcode", "betterqr", "devx-dragon", "microqr", "pythonQR", "Sri Lanka"]
+version = "2.0.0"
 authors = [{ name = "DevX-Dragon" }]
 license = { file = "LICENSE" }
 dependencies = [
@@ -26,15 +26,42 @@ classifiers = [
     "Programming Language :: Python :: 3.13",
 ]
 
+[project.optional-dependencies]
+test = [
+    "pytest>=7.0",
+    "zxing-cpp>=2.2.0",
+    "cairosvg>=2.7.0",
+    "numpy"
+]
+
 [project.urls]
 Homepage = "https://github.com/DevX-Dragon/BetterQR"
-Issues = "https://github.com/DevX-Dragon/BetterQR/issues"
+Issues   = "https://github.com/DevX-Dragon/BetterQR/issues"
+Website  = "https://devx-dragon.github.io/betterqr"
+Documentation = "https://github.com/DevX-Dragon/betterqr/blob/main/docs/DOCUMENTATION.md"
 
 [project.scripts]
 betterqr = "betterqr.cli:main"
+
+# ── package discovery ─────────────────────────────────────────────────────────
+# Only the src/betterqr package is shipped to PyPI.
+# The tests/ directory and scripts/ directory at the repo root are
+# deliberately outside src/ so setuptools never includes them.
 
 [tool.setuptools]
 package-dir = {"" = "src"}
 
 [tool.setuptools.packages.find]
-where = ["src"]
+where   = ["src"]
+exclude = ["betterqr.tests*"]   # belt-and-suspenders: also exclude if tests live in src
+
+[tool.setuptools.package-data]
+betterqr = ["py.typed"]
+
+# ── test configuration ────────────────────────────────────────────────────────
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = "-v --tb=short"

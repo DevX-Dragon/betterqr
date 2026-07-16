@@ -25,30 +25,24 @@ def render_terminal(
     """
     size = len(matrix)
     rows = []
-    pad = " " * border
 
     if style == "compact":
         # Full block chars: █ = dark, space = light
         dark_char = "█" if not invert else " "
         light_char = " " if not invert else "█"
-        top = pad + light_char * (size + 2 * border) + pad
-        rows.append(top)
         for _ in range(border):
-            rows.append(pad + light_char * (size + 2 * border))
+            rows.append(light_char * (size + 2 * border))
         for r in range(size):
-            line = pad
-            for _ in range(border):
-                line += light_char
+            line = light_char * border
             for c in range(size):
                 val = matrix[r][c]
                 if invert:
                     val = 1 - val
                 line += dark_char if val else light_char
-            for _ in range(border):
-                line += light_char
+            line += light_char * border
             rows.append(line)
         for _ in range(border):
-            rows.append(pad + light_char * (size + 2 * border))
+            rows.append(light_char * (size + 2 * border))
         return "\n".join(rows)
 
     elif style == "ascii":

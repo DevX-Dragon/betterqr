@@ -19,7 +19,8 @@ _LOGO_ECC_LIMITS = {
 
 
 def _hex_to_rgb(c: str) -> tuple[int,int,int]:
-    c = c.strip().lstrip('#')
+    if not c: return (0, 0, 0)
+    c = str(c).strip().lstrip('#')
     if len(c) == 3: c = ''.join(x*2 for x in c)
     return int(c[0:2],16), int(c[2:4],16), int(c[4:6],16)
 
@@ -233,11 +234,14 @@ def add_frame(
 
         bbox = draw.textbbox((0, 0), label, font=font)
         tw, th = bbox[2] - bbox[0], bbox[3] - bbox[1]
-        tx = (canvas_w - tw) // 2
-        if label_position == "bottom":
-            ty = qy + qh + 8
-        else:
-            ty = 8
+        tx = (canvas_w - tw) // 2 - bbox[0]
+
+        # The label gets its own reserved band (label_h) outside the frame:
+        # at the bottom of the canvas for "bottom", at the top for "top".
+        # Center the text vertically inside that band so it doesn't land on
+        # top of the frame's border stroke.
+        band_top = (canvas_h - label_h) if label_position == "bottom" else 0
+        ty = band_top + (label_h - th) // 2 - bbox[1]
 
         draw.text((tx, ty), label, fill=_hex_to_rgb(label_color) + (255,), font=font)
 

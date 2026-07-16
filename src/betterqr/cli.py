@@ -1,55 +1,21 @@
-""""betterqr CLI
-============
-The cleanest QR code generator in your terminal.
+"""
+betterqr — generate QR codes from the command line.
 
-Basic usage:
-  betterqr "https://example.com" -> qr.png
-  betterqr "Hello World" out.png
-  betterqr "https://example.com" out.svg
-
-Micro QR (compact, for small labels):
-  betterqr "HELLO" --type micro
-  betterqr "12345" --type micro -e L
-  betterqr "ABC" --type micro out.png --info
-
-Shapes:
-  betterqr "text" -s circle
-  betterqr "text" -s rounded
-  betterqr "text" -s diamond / star / gapped
-
-Colors:
-  betterqr "text" --fill "#6C3082" --back "#F3E8FF"
-  betterqr "text" --fill "#000" --back transparent
-
-Gradients:
+Examples:
+  betterqr "https://example.com"                     -> qr.png
+  betterqr "Hello World" out.svg
+  betterqr "HELLO" --type micro                        # compact Micro QR
+  betterqr "text" -s circle --fill "#6C3082" --back "#F3E8FF"
   betterqr "text" --gradient "#FF6B6B" "#4ECDC4"
-  betterqr "text" --gradient "#1d4ed8" "#7c3aed" --gradient-dir radial
-
-Logo:
-  betterqr "https://mysite.com" --logo logo.png
-  betterqr "https://mysite.com" --logo logo.png --logo-ratio 0.3 -e H
-
-Frame & label:
-  betterqr "Scan Me!" --frame rounded --label "Visit our site"
-  betterqr "Scan Me!" --frame fancy --label "WiFi Password: abc123"
-
-Animation (saves .gif):
+  betterqr "https://mysite.com" --logo logo.png -e H    # H recommended with logos
+  betterqr "Scan Me!" --frame fancy --label "Visit our site"
   betterqr "Hello" out.gif --effect shimmer
-  betterqr "Hello" out.gif --effect matrix --fps 12
-  betterqr "Hello" out.gif --effect wave --frames 30
-
-Data types:
-  betterqr --wifi MyNet MyPassword
-  betterqr --wifi MyNet MyPassword --security WEP
+  betterqr --wifi MyNetwork MyPassword
   betterqr --contact "Jane Doe" --phone "+1-555-0199" --email "jane@example.com"
-  betterqr --geo 51.5074 -0.1278
-  betterqr --sms "+1-555-0199" "Hello!"
-  betterqr --email "hi@example.com" "Subject" "Body text"
-  betterqr --phone "+1-800-555-0199"
+  betterqr "Hello" --print                              # preview in the terminal
 
-Terminal preview:
-  betterqr "Hello" --print
-  betterqr "Hello" --print --invert
+See the full option reference above, or the README for every flag and data-type
+shortcut (WiFi, vCard, geo, SMS, email, phone).
 """
 import argparse
 import os
@@ -57,23 +23,26 @@ import sys
 
 
 def _color(value: str) -> str:
-    """V"a"l"idate a color argument."""
+    """Validate and normalise a hex colour argument."""
+    value = value.strip().strip('"').strip("'")
     if value.lower() == "transparent":
         return value
     if not value.startswith("#"):
         value = "#" + value
-    value = value.lstrip("#")
-    if len(value) not in (3, 6):
+    h = value.lstrip("#")
+    if len(h) == 3:
+        h = h[0]*2 + h[1]*2 + h[2]*2
+    if len(h) != 6:
         raise argparse.ArgumentTypeError(
             f"Invalid color '{value}'. Use hex like #FF0000 or #F00"
         )
-    return "#" + value
+    return "#" + h
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(
         prog="betterqr",
-        description="BetterQR - Beautiful, scannable QR codes. Zero external QR dependencies.",
+        description="BetterQR — beautiful, scannable QR codes from the command line.",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog=__doc__,
         add_help=True,
@@ -84,7 +53,7 @@ def main() -> None:
         "output",
         nargs="?",
         default="qr.png",
-        help="Output file (.png .jpg .svg .gif) [default: qr.png]",
+        help="Output file (.png .jpg .svg .pdf .eps .gif) [default: qr.png]",
     )
 
     qr_group = parser.add_argument_group("QR settings")
@@ -120,7 +89,7 @@ def main() -> None:
         default="square",
         choices=["square", "circle", "rounded", "diamond", "star", "gapped", "vertical_bar", "horizontal_bar"],
         metavar="SHAPE",
-        help="Module shape [default: square]\n  square | circle | rounded | diamond | star | gapped | vertical_bar | horizontal_bar",
+        help="Module shape: square | circle | rounded | diamond | star | gapped | vertical_bar | horizontal_bar [default: square]",
     )
     style_group.add_argument("--fill", default="#000000", type=_color, metavar="COLOR", help="Dark module color [default: #000000]")
     style_group.add_argument(
@@ -130,7 +99,7 @@ def main() -> None:
         metavar="COLOR",
         help="Background color [default: #FFFFFF] (use 'transparent' for PNG alpha)",
     )
-    style_group.add_argument("--finder", type=_color, metavar="COLOR", help="Separate color for the 3 finder squares")
+    style_group.add_argument("--finder", type=_color, metavar="COLOR", help="Separate color for the finder squares (3 on standard QR, 1 on Micro QR)")
 
     gradient_group = parser.add_argument_group("Gradient")
     gradient_group.add_argument(
@@ -144,7 +113,7 @@ def main() -> None:
         default="diagonal",
         choices=["horizontal", "vertical", "diagonal", "radial"],
         metavar="DIR",
-        help="Gradient direction [default: diagonal]\n  horizontal | vertical | diagonal | radial",
+        help="Gradient direction: horizontal | vertical | diagonal | radial [default: diagonal]",
     )
 
     logo_group = parser.add_argument_group("Logo / image")
@@ -157,15 +126,15 @@ def main() -> None:
     frame_group.add_argument("--frame-color", type=_color, default="#000000", metavar="COLOR", help="Frame color [default: #000000]")
     frame_group.add_argument("--label", metavar="TEXT", help="Text label to add below (or above) the QR code")
     frame_group.add_argument("--label-above", action="store_true", help="Place label above the QR instead of below")
-    frame_group.add_argument("--label-color", type=_color, default="#000000", metavar="COLOR")
-    frame_group.add_argument("--label-size", type=int, default=14, metavar="PX")
+    frame_group.add_argument("--label-color", type=_color, default="#000000", metavar="COLOR", help="Label text color [default: #000000]")
+    frame_group.add_argument("--label-size", type=int, default=14, metavar="PX", help="Label font size in pixels [default: 14]")
 
     animation_group = parser.add_argument_group("Animation (saves .gif)")
     animation_group.add_argument(
         "--effect",
         metavar="EFFECT",
         choices=["shimmer", "fade", "scan", "pulse", "build", "matrix", "wave", "blink", "typewriter", "rotate"],
-        help="Animation effect:\n  shimmer | fade | scan | pulse | build |\n  matrix  | wave | blink | typewriter | rotate",
+        help="Animation effect: shimmer | fade | scan | pulse | build | matrix | wave | blink | typewriter | rotate",
     )
     animation_group.add_argument("--frames", type=int, default=20, metavar="N", help="Number of animation frames [default: 20]")
     animation_group.add_argument("--fps", type=int, default=15, metavar="N", help="Animation playback speed [default: 15]")
@@ -193,11 +162,33 @@ def main() -> None:
     )
     output_group.add_argument("--info", action="store_true", help="Print QR code metadata (version, size, mode, etc.)")
 
-    args = parser.parse_args()
+    args = parser.parse_intermixed_args()
 
     from .core import QR, WiFi, VCard, GeoLocation, SMS, Email, Phone
 
     data = None
+
+    _output_exts = ('.png', '.jpg', '.jpeg', '.svg', '.gif', '.pdf', '.eps')
+
+    def _pop_output_from(attr):
+        """If the last item in a nargs=+ list looks like an output file, move it to args.output."""
+        val = getattr(args, attr, None)
+        if val and any(val[-1].lower().endswith(e) for e in _output_exts):
+            args.output = val[-1]
+            setattr(args, attr, val[:-1] or None)
+
+    for _attr in ('wifi', 'email', 'sms'):
+        _pop_output_from(_attr)
+
+    # For helper flags whose nargs is fixed (--geo, --phone, --contact), any trailing
+    # positional ends up in args.data; redirect it to args.output.
+    _helper_active = bool(args.wifi or args.contact or args.geo or args.sms or
+                          (args.email and not args.contact) or
+                          (args.phone and not args.contact))
+    if _helper_active and args.data and args.output == "qr.png":
+        if any(args.data.lower().endswith(e) for e in _output_exts):
+            args.output = args.data
+            args.data = None
 
     if args.wifi:
         ssid = args.wifi[0]

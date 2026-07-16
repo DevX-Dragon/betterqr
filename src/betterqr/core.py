@@ -3,8 +3,9 @@ BetterQR Core: The primary API for QR code generation.
 """
 from __future__ import annotations
 import io
+import warnings
 from typing import Literal
-from .exceptions import LowContrastWarning
+from .exceptions import LowContrastWarning, LogoECCWarning
 from .helpers import (
     wifi_string,
     WiFi,
@@ -18,20 +19,23 @@ from .helpers import (
     Crypto,
     batch,
 )
-from .encoder import encode_data
+from .encoder import encode_data, min_version_for_bytes, MAX_STRUCTURED_APPEND_SYMBOLS, _SA_OVERHEAD_BITS
 from .matrix import build_matrix
 from .render.vector import render_svg
 from .render.raster import render_png as render_raster
 from .render.terminal import render_terminal
 
 ECC_LEVELS = ('L', 'M', 'Q', 'H')
+QR_TYPES = ('standard', 'micro')
 SHAPES = ('square', 'circle', 'rounded', 'diamond', 'gapped', 'star', 'vertical_bar', 'horizontal_bar')
 FRAME_STYLES = ('simple', 'rounded', 'double', 'shadow', 'fancy')
 ANIM_EFFECTS = ('shimmer', 'fade', 'scan', 'pulse', 'build', 'matrix', 'wave', 'blink', 'typewriter', 'rotate')
 
 def _hex_to_rgb(hex_color: str) -> tuple[int, int, int]:
-    hex_color = hex_color.lstrip("#")
-    return tuple(int(hex_color[i:i+2], 16) for i in (0, 2, 4))
+    if not hex_color: return (0, 0, 0)
+    h = hex_color.strip().lstrip("#")
+    if len(h) == 3: h = h[0]*2 + h[1]*2 + h[2]*2
+    return tuple(int(h[i:i+2], 16) for i in (0, 2, 4))
 
 def _rgb_to_hex(rgb: tuple[int, int, int]) -> str:
     return f"#{rgb[0]:02x}{rgb[1]:02x}{rgb[2]:02x}"
@@ -55,7 +59,11 @@ class QR:
         qr.save("my_qr.png")
     """
 
-    def __init__(self, data, ecc: str = 'M', version: int | None = None, qr_type: str = "standard"):
+    def __init__(self, data, ecc: str = 'M', version: int | None = None, qr_type: str = "standard",
+                 structured_append_info: tuple[int, int, int] | None = None):
+        if qr_type not in QR_TYPES:
+            raise ValueError(f"qr_type must be one of {QR_TYPES}")
+
         ecc = ecc.upper()
         if ecc not in ECC_LEVELS:
             raise ValueError(f"ecc must be one of {ECC_LEVELS}")
@@ -64,8 +72,17 @@ class QR:
         if qr_type == "micro" and ecc not in ('L', 'M', 'Q'):
             raise ValueError("Micro QR only supports ECC levels L, M, Q (not H)")
 
-        self._raw     = str(data)
+        if structured_append_info is not None and qr_type != "standard":
+            raise ValueError("Structured Append is only supported for standard QR codes")
+
+        # Structured Append chunks are raw pre-split bytes (a chunk boundary
+        # may fall in the middle of a multi-byte UTF-8 character), so they
+        # must NOT be round-tripped through str().
+        self._raw     = data if isinstance(data, (bytes, bytearray)) else str(data)
         self._ecc     = ecc
+        self._version_hint = version
+        self._qr_type = qr_type
+        self._sa_info = structured_append_info
         self._version_hint = version
         self._qr_type = qr_type
 
@@ -117,11 +134,12 @@ class QR:
         qr_type = qr_type or self._qr_type
 
         self._codewords, self._version, self._mode = encode_data(
-            self._raw, ecc, version_hint, qr_type=qr_type
+            self._raw, ecc, version_hint, qr_type=qr_type, structured_append=self._sa_info
         )
         logo_info = self._get_logo_info()
         self._matrix = build_matrix(self._codewords, self._version, ecc, qr_type=qr_type, logo_info=logo_info)
         self._ecc = ecc
+
 
     # ──────────────────────────────────────────────────────────────────
     # Styling
@@ -188,7 +206,6 @@ class QR:
             contrast = _contrast_ratio(lum_fill, lum_back)
 
             if contrast < 4.5:
-                import warnings
                 msg = (f"Low contrast detected (ratio: {contrast:.2f}). "
                        f"Foreground: {self._fill}, Background: {self._back}. "
                        "Consider adjusting colors for better scannability.")
@@ -234,24 +251,32 @@ class QR:
         self._logo_ratio   = ratio
         self._logo_shape   = shape
         self._logo_padding = padding
+        # size_px is computed at render time from actual image dimensions; store ratio only
         self._logo_pad_color = padding_color
         self._logo_border  = border
         self._logo_border_w = border_width
         if self._ecc != "H":
+            warnings.warn(
+                f"Adding a logo requires ECC level H to stay scannable; "
+                f"raising from '{self._ecc}' to 'H'.",
+                LogoECCWarning,
+            )
             self._rebuild(ecc="H")
         return self
 
     def _get_logo_info(self) -> dict | None:
         if self._logo_path:
+            total_px = (self.module_count + 2 * self._border) * self._box_size
             return {
                 "logo_path": self._logo_path,
                 "ratio": self._logo_ratio,
                 "shape": self._logo_shape,
-                "padding": self._logo_padding,
+                "padding_px": self._logo_padding,
                 "padding_color": self._logo_pad_color,
                 "border": self._logo_border,
                 "border_width": self._logo_border_w,
                 "box_size": self._box_size,
+                "size_px": int(total_px * self._logo_ratio),
                 "border_modules": self._border
             }
         return None
@@ -330,13 +355,21 @@ class QR:
             version       = self._version,
             module_gap    = self._gap,
             quiet_zone_color = self._quiet_color,
+            qr_type       = self._qr_type,
         )
         kw.update(overrides)
 
         if fmt == "SVG":
             return render_svg(self._matrix, **kw)
 
-        buf = render_raster(self._matrix, format=fmt, **kw)
+        if fmt == "EPS":
+            from .render.vector import render_eps
+            return render_eps(self._matrix, **kw)
+
+        # PDF is a raster format under the hood: render as PNG (with the
+        # full logo/frame pipeline below) and re-encode as PDF at the end.
+        raster_fmt = "PNG" if fmt == "PDF" else fmt
+        buf = render_raster(self._matrix, format=raster_fmt, **kw)
 
         # Post-process: embed logo (for raster)
         if self._logo_path:
@@ -351,7 +384,7 @@ class QR:
                 shape         = self._logo_shape,
                 padding       = self._logo_padding,
                 padding_color = self._logo_pad_color,
-                border_color  = self._logo_border,
+                border_color  = "#000000" if self._logo_border else None,
                 border_width  = self._logo_border_w,
             )
             buf = io.BytesIO()
@@ -367,7 +400,7 @@ class QR:
             img = add_frame(
                 img,
                 style            = self._frame_style,
-                frame_color      = self._frame_color,
+                frame_color      = self._frame_color or "#000000",
                 frame_width      = self._frame_width,
                 corner_radius    = self._frame_radius,
                 label            = self._label,
@@ -380,12 +413,34 @@ class QR:
             img.save(buf, format="PNG")
             buf.seek(0)
 
+        if fmt == "PDF":
+            from PIL import Image
+            img = Image.open(buf)
+            if img.mode in ("RGBA", "LA", "P"):
+                # PDF has no alpha channel; flatten transparency onto white.
+                background = Image.new("RGB", img.size, (255, 255, 255))
+                rgba = img.convert("RGBA")
+                background.paste(rgba, mask=rgba.split()[-1])
+                img = background
+            else:
+                img = img.convert("RGB")
+            buf = io.BytesIO()
+            img.save(buf, format="PDF")
+            buf.seek(0)
+
         return buf
 
     def save(self, filepath: str, box_size: int | None = None, border: int | None = None) -> "QR":
         """Save QR code to a file."""
         bs = self._box_size if box_size is None else box_size
         bd = self._border if border is None else border
+
+       
+        if box_size is None:
+            n_modules = self.module_count + 2 * bd
+            min_px = 400
+            if n_modules * bs < min_px:
+                bs = max(bs, -(-min_px // n_modules))  # ceiling division
         ext = filepath.rsplit('.', 1)[-1].lower()
 
         if ext == "gif" and self._anim_effect:
@@ -409,6 +464,10 @@ class QR:
             filepath = filepath.rsplit('.', 1)[0] + ".png"
         elif ext == "svg":
             buf = self._render_static("SVG", bs, bd)
+        elif ext == "eps":
+            buf = self._render_static("EPS", bs, bd)
+        elif ext == "pdf":
+            buf = self._render_static("PDF", bs, bd)
         elif ext in ("jpg", "jpeg"):
             buf = self._render_static("JPEG", bs, bd)
         else:
@@ -481,10 +540,17 @@ class QR:
     def matrix(self) -> list[list[int]]:
         return [row[:] for row in self._matrix]
 
+    def _display_data(self, limit: int) -> str:
+        """Human-readable preview of self._raw, safe for both str and bytes."""
+        if isinstance(self._raw, (bytes, bytearray)):
+            preview = repr(self._raw[:limit])
+            return preview + ('...' if len(self._raw) > limit else '')
+        return self._raw[:limit] + ('...' if len(self._raw) > limit else '')
+
     def info(self) -> dict:
         mode_names = {1: 'numeric', 2: 'alphanumeric', 4: 'byte', 8: 'kanji'}
-        return {
-            'data':         self._raw[:60] + ('...' if len(self._raw) > 60 else ''),
+        result = {
+            'data':         self._display_data(60),
             'type':         self._qr_type,
             'version':      self._version,
             'ecc':          self._ecc,
@@ -492,6 +558,14 @@ class QR:
             'modules':      self.module_count,
             'data_length':  len(self._raw),
         }
+        if self._sa_info is not None:
+            seq_index, total_symbols, parity = self._sa_info
+            result['structured_append'] = {
+                'sequence_index': seq_index,   # 0-based position of this symbol
+                'total_symbols':  total_symbols,
+                'parity':         parity,
+            }
+        return result
 
     @property
     def version_label(self) -> str:
@@ -505,134 +579,128 @@ class QR:
         return self._qr_type
 
     def __repr__(self) -> str:
-        d = self._raw[:30]
+        d = self._display_data(30)
         type_tag = f" [{self._qr_type}]" if self._qr_type != "standard" else ""
+        sa_tag = f" [SA {self._sa_info[0]+1}/{self._sa_info[1]}]" if self._sa_info else ""
         return (f"<QR v{self._version} {self._ecc} {self.module_count}×{self.module_count}"
-                f"{type_tag} {d!r}{'...' if len(self._raw)>30 else ''}>")
+                f"{type_tag}{sa_tag} {d}>")
 
-# ──────────────────────────────────────────────────────────────────────────
-# Data helpers
-# ──────────────────────────────────────────────────────────────────────────
 
-class WiFi:
-    def __init__(self, ssid: str, password: str = "", security: str = "WPA"):
-        if not ssid: raise ValueError("SSID cannot be empty")
-        security = security.upper()
-        if security not in ("WPA", "WEP", "NOPASS", ""): security = "WPA"
-        self._s, self._p, self._sec = ssid, password, security
+def save(
+    data,
+    filepath: str,
+    *,
+    ecc: str = "M",
+    version: int | None = None,
+    qr_type: str = "standard",
+    box_size: int | None = None,
+    border: int | None = None,
+    **style_kwargs,
+) -> "QR":
+    """
+    Create and save a QR code in a single call.
 
-    def __str__(self):
-        sec = self._sec.lower() if self._sec else "nopass"
-        return f"WIFI:S:{self._s};T:{sec};P:{self._p};;"
+        betterqr.save("https://example.com", "out.png")
+        betterqr.save("https://example.com", "out.png", fill_color="#1D4ED8")
 
-class VCard:
-    def __init__(self, name: str, org: str = "", phone: str = "",
-                 email: str = "", url: str = "", address: str = "", note: str = ""):
-        if not name: raise ValueError("name is required")
-        self.name, self.org, self.phone = name, org, phone
-        self.email, self.url, self.address, self.note = email, url, address, note
+    Equivalent to:
+        QR(data, ecc=ecc, version=version, qr_type=qr_type) \\
+            .style(**style_kwargs) \\
+            .save(filepath, box_size=box_size, border=border)
 
-    def __str__(self):
-        lines = ["BEGIN:VCARD", "VERSION:3.0", f"FN:{self.name}", f"N:{self.name};;;;"]
-        if self.org:     lines.append(f"ORG:{self.org}")
-        if self.phone:   lines.append(f"TEL:{self.phone}")
-        if self.email:   lines.append(f"EMAIL:{self.email}")
-        if self.url:     lines.append(f"URL:{self.url}")
-        if self.address: lines.append(f"ADR:{self.address}")
-        if self.note:    lines.append(f"NOTE:{self.note}")
-        lines.append("END:VCARD")
-        return "\n".join(lines)
+    Any keyword accepted by QR.style() (fill_color, module_shape,
+    gradient_color, etc.) can be passed straight through. Returns the
+    QR object in case further chaining is useful.
+    """
+    qr = QR(data, ecc=ecc, version=version, qr_type=qr_type)
+    if style_kwargs:
+        qr.style(**style_kwargs)
+    qr.save(filepath, box_size=box_size, border=border)
+    return qr
 
-class MeCard:
-    def __init__(self, name: str, phone: str = "", email: str = "",
-                 url: str = "", birthday: str = "", note: str = ""):
-        if not name: raise ValueError("name is required")
-        self.name, self.phone, self.email = name, phone, email
-        self.url, self.birthday, self.note = url, birthday, note
 
-    def __str__(self):
-        parts = [f"N:{self.name}"]
-        if self.phone:    parts.append(f"TEL:{self.phone}")
-        if self.email:    parts.append(f"EMAIL:{self.email}")
-        if self.url:      parts.append(f"URL:{self.url}")
-        if self.birthday: parts.append(f"BDAY:{self.birthday}")
-        if self.note:     parts.append(f"MEMO:{self.note}")
-        return "MECARD:" + ";".join(parts) + ";;"
+def structured_append(
+    data: str,
+    ecc: str = "M",
+    symbol_count: int | None = None,
+    version: int | None = None,
+    **style_kwargs,
+) -> list["QR"]:
+    """
+    Split data across multiple linked QR symbols (ISO/IEC 18004:2015
+    Structured Append — standard QR only). Useful when a message is too
+    large for one symbol at your chosen ECC level, or when you'd rather
+    print/scan several smaller, less dense codes than one large one.
 
-class GeoLocation:
-    def __init__(self, lat: float, lon: float, altitude: float | None = None):
-        self.lat, self.lon, self.alt = lat, lon, altitude
+    A compliant scanner reconstructs the original message from the parts
+    using each symbol's embedded sequence position, total count, and a
+    parity check — scan order doesn't matter, only that all parts are
+    read (most phone camera apps handle this automatically).
 
-    def __str__(self):
-        s = f"geo:{self.lat},{self.lon}"
-        if self.alt is not None: s += f",{self.alt}"
-        return s
+    Returns a list of QR objects, one per symbol, in scan order:
 
-class Event:
-    def __init__(self, summary: str, dtstart: str, dtend: str,
-                 location: str = "", description: str = ""):
-        self.summary, self.dtstart, self.dtend = summary, dtstart, dtend
-        self.location, self.description = location, description
+        parts = betterqr.structured_append(long_text, ecc="M")
+        for i, qr in enumerate(parts):
+            qr.save(f"part_{i+1}_of_{len(parts)}.png")
 
-    def __str__(self):
-        lines = ["BEGIN:VCALENDAR", "VERSION:2.0", "BEGIN:VEVENT",
-                 f"SUMMARY:{self.summary}", f"DTSTART:{self.dtstart}", f"DTEND:{self.dtend}"]
-        if self.location:    lines.append(f"LOCATION:{self.location}")
-        if self.description: lines.append(f"DESCRIPTION:{self.description}")
-        lines += ["END:VEVENT", "END:VCALENDAR"]
-        return "\n".join(lines)
+    If the data fits in a single ordinary symbol, a one-element list is
+    returned (no Structured Append header is added — there's nothing to
+    reassemble).
+    """
+    ecc = ecc.upper()
+    if ecc not in ECC_LEVELS:
+        raise ValueError(f"ecc must be one of {ECC_LEVELS}")
+    if symbol_count is not None and not (1 <= symbol_count <= MAX_STRUCTURED_APPEND_SYMBOLS):
+        raise ValueError(f"symbol_count must be between 1 and {MAX_STRUCTURED_APPEND_SYMBOLS}")
 
-class SMS:
-    def __init__(self, phone: str, body: str = ""):
-        self.phone, self.body = phone, body
+    raw = data.encode("utf-8") if isinstance(data, str) else bytes(data)
+    if not raw:
+        raise ValueError("data must not be empty")
 
-    def __str__(self):
-        return f"smsto:{self.phone}:{self.body}" if self.body else f"sms:{self.phone}"
-
-class Email:
-    def __init__(self, address: str, subject: str = "", body: str = ""):
-        self.address, self.subject, self.body = address, subject, body
-
-    def __str__(self):
-        params = []
-        if self.subject: params.append(f"subject={self.subject}")
-        if self.body:    params.append(f"body={self.body}")
-        base = f"mailto:{self.address}"
-        return base + ("?" + "&".join(params) if params else "")
-
-class Phone:
-    def __init__(self, number: str):
-        self.number = number
-
-    def __str__(self):
-        return f"tel:{self.number}"
-
-class Crypto:
-    def __init__(self, coin: str, address: str, amount: float | None = None,
-                 label: str = "", message: str = ""):
-        self.coin, self.address, self.amount = coin.lower(), address, amount
-        self.label, self.message = label, message
-
-    def __str__(self):
-        params = []
-        if self.amount is not None: params.append(f"amount={self.amount}")
-        if self.label:              params.append(f"label={self.label}")
-        if self.message:            params.append(f"message={self.message}")
-        base = f"{self.coin}:{self.address}"
-        return base + ("?" + "&".join(params) if params else "")
-
-def batch(items: list, output_dir: str = ".", prefix: str = "qr", **style_kwargs) -> list[QR]:
-    import os
-    os.makedirs(output_dir, exist_ok=True)
-    results = []
-    for i, item in enumerate(items):
-        if isinstance(item, tuple):
-            data, filename = item
-        else:
-            data, filename = item, f"{prefix}_{i}.png"
-        qr = QR(data)
+    def _finish(qr: "QR") -> "QR":
         if style_kwargs:
             qr.style(**style_kwargs)
-        qr.save(os.path.join(output_dir, filename))
-        results.append(qr)
-    return results
+        return qr
+
+    # If it already fits in one ordinary symbol, don't bother splitting —
+    # a single-symbol "sequence" has nothing to reassemble.
+    if symbol_count is None or symbol_count == 1:
+        try:
+            single = QR(data, ecc=ecc, version=version)
+            if symbol_count is None:
+                return [_finish(single)]
+        except ValueError:
+            if symbol_count == 1:
+                raise  # caller explicitly asked for 1 symbol and it doesn't fit
+
+    if symbol_count is None:
+        for sc in range(2, MAX_STRUCTURED_APPEND_SYMBOLS + 1):
+            chunk_size = -(-len(raw) // sc)  # ceil division
+            try:
+                needed_version = min_version_for_bytes(chunk_size, ecc, _SA_OVERHEAD_BITS)
+            except ValueError:
+                continue
+            symbol_count = sc
+            version = version or needed_version
+            break
+        else:
+            raise ValueError(
+                f"Data too large to fit in {MAX_STRUCTURED_APPEND_SYMBOLS} "
+                f"Structured Append symbols at ECC level {ecc}"
+            )
+
+    chunk_size = -(-len(raw) // symbol_count)
+    chunks = [raw[i:i + chunk_size] for i in range(0, len(raw), chunk_size)] or [raw]
+    symbol_count = len(chunks)  # may be smaller than requested if data is short
+
+    parity = 0
+    for b in raw:
+        parity ^= b
+
+    symbols = []
+    for i, chunk in enumerate(chunks):
+        qr = QR(chunk, ecc=ecc, version=version, qr_type="standard",
+                 structured_append_info=(i, symbol_count, parity))
+        symbols.append(_finish(qr))
+    return symbols
+

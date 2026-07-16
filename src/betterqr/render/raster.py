@@ -29,9 +29,13 @@ def _lerp_color(c1: tuple, c2: tuple, t: float) -> tuple[int, int, int]:
     return tuple(int(c1[i] + (c2[i] - c1[i]) * t) for i in range(3))
 
 
-def _is_finder(r: int, c: int, size: int) -> bool:
+def _is_finder(r: int, c: int, size: int, qr_type: str = "standard") -> bool:
     """True if (r,c) is inside a 7x7 finder pattern."""
-    if r < 7 and c < 7:   return True
+    if r < 7 and c < 7:
+        return True
+    if qr_type != "standard":
+        # Micro QR and rMQR have a single finder pattern, top-left only.
+        return False
     if r < 7 and c >= size - 7: return True
     if r >= size - 7 and c < 7: return True
     return False
@@ -54,6 +58,7 @@ def render_png(
     module_gap: float = 0.15,
     quiet_zone_color: str | None = None,
     format: str = "PNG",
+    qr_type: str = "standard",
 ) -> io.BytesIO:
     try:
         from PIL import Image, ImageDraw
@@ -63,6 +68,31 @@ def render_png(
     size = len(matrix)
     total_px = (size + 2 * border) * box_size
     offset = border * box_size
+
+    fast_png = (
+        format.upper() not in ("JPG", "JPEG")
+        and module_shape == "square"
+        and gradient_color is None
+        and (finder_color is None or finder_color == fill_color)
+        and not _is_transparent(back_color)
+        and not (quiet_zone_color and not _is_transparent(quiet_zone_color))
+        and not logo_path
+    )
+    if fast_png:
+        back_rgb = _hex_to_rgb(back_color)
+        fill_rgb = _hex_to_rgb(fill_color)
+        palette = list(back_rgb) + list(fill_rgb) + [0, 0, 0] * 254  # pad to 256 entries
+        tiny = Image.new("P", (size, size))
+        tiny.putpalette(palette)
+        tiny.putdata([1 if matrix[r][c] else 0 for r in range(size) for c in range(size)])
+        scaled = tiny.resize((size * box_size, size * box_size), Image.NEAREST)
+        final = Image.new("P", (total_px, total_px))  # defaults to palette index 0 (background)
+        final.putpalette(palette)
+        final.paste(scaled, (offset, offset))
+        buf = io.BytesIO()
+        final.save(buf, format="PNG")
+        buf.seek(0)
+        return buf
 
     is_rgba = _is_transparent(back_color)
     bg_color = (255, 255, 255, 0) if is_rgba else _hex_to_rgb(back_color) + (255,)
@@ -79,74 +109,87 @@ def render_png(
         inner_size = size * box_size
         draw.rectangle([offset, offset, offset + inner_size, offset + inner_size], fill=bg_color)
 
-    def get_color(r: int, c: int) -> tuple:
-        if _is_finder(r, c, size):
-            return finder_rgb + (255,)
-        if grad_rgb:
-            if gradient_dir == "horizontal":
-                t = c / (size - 1) if size > 1 else 0.0
-            elif gradient_dir == "vertical":
-                t = r / (size - 1) if size > 1 else 0.0
-            elif gradient_dir == "radial":
-                cr, cc = size / 2, size / 2
-                dist = math.sqrt((r - cr)**2 + (c - cc)**2)
-                max_d = math.sqrt(cr**2 + cc**2)
-                t = dist / max_d if max_d else 0.0
-            else:  # diagonal
-                t = (r + c) / (2 * (size - 1)) if size > 1 else 0.0
-            return _lerp_color(fill_rgb, grad_rgb, min(t, 1.0)) + (255,)
-        return fill_rgb + (255,)
+    uniform_color = (module_shape == "square" and grad_rgb is None
+                      and finder_rgb == fill_rgb)
+    if uniform_color:
+        tiny = Image.new("RGBA", (size, size), (0, 0, 0, 0))
+        pixels = [
+            (fill_rgb + (255,)) if matrix[r][c] else (0, 0, 0, 0)
+            for r in range(size) for c in range(size)
+        ]
+        tiny.putdata(pixels)
+        scaled = tiny.resize((size * box_size, size * box_size), Image.NEAREST)
+        img.paste(scaled, (offset, offset), scaled)
 
-    for r in range(size):
-        for c in range(size):
-            if not matrix[r][c]:
-                continue
+    else:
+        def get_color(r: int, c: int) -> tuple:
+            if _is_finder(r, c, size, qr_type):
+                return finder_rgb + (255,)
+            if grad_rgb:
+                if gradient_dir == "horizontal":
+                    t = c / (size - 1) if size > 1 else 0.0
+                elif gradient_dir == "vertical":
+                    t = r / (size - 1) if size > 1 else 0.0
+                elif gradient_dir == "radial":
+                    cr, cc = size / 2, size / 2
+                    dist = math.sqrt((r - cr)**2 + (c - cc)**2)
+                    max_d = math.sqrt(cr**2 + cc**2)
+                    t = dist / max_d if max_d else 0.0
+                else:  # diagonal
+                    t = (r + c) / (2 * (size - 1)) if size > 1 else 0.0
+                return _lerp_color(fill_rgb, grad_rgb, min(t, 1.0)) + (255,)
+            return fill_rgb + (255,)
 
-            color = get_color(r, c)
-            x1 = offset + c * box_size
-            y1 = offset + r * box_size
-            x2 = x1 + box_size - 1
-            y2 = y1 + box_size - 1
+        for r in range(size):
+            for c in range(size):
+                if not matrix[r][c]:
+                    continue
 
-            is_f = _is_finder(r, c, size)
-            shape = "square" if is_f else module_shape
+                color = get_color(r, c)
+                x1 = offset + c * box_size
+                y1 = offset + r * box_size
+                x2 = x1 + box_size - 1
+                y2 = y1 + box_size - 1
 
-            if shape == "circle":
-                draw.ellipse([x1, y1, x2, y2], fill=color)
+                is_f = _is_finder(r, c, size, qr_type)
+                shape = "square" if is_f else module_shape
 
-            elif shape == "rounded":
-                radius = max(1, box_size // 3)
-                draw.rounded_rectangle([x1, y1, x2, y2], radius=radius, fill=color)
+                if shape == "circle":
+                    draw.ellipse([x1, y1, x2, y2], fill=color)
 
-            elif shape == "diamond":
-                cx, cy = (x1 + x2) // 2, (y1 + y2) // 2
-                draw.polygon([(cx, y1), (x2, cy), (cx, y2), (x1, cy)], fill=color)
+                elif shape == "rounded":
+                    radius = max(1, box_size // 3)
+                    draw.rounded_rectangle([x1, y1, x2, y2], radius=radius, fill=color)
 
-            elif shape == "gapped":
-                gap = max(1, int(box_size * module_gap))
-                draw.rectangle([x1 + gap, y1 + gap, x2 - gap, y2 - gap], fill=color)
+                elif shape == "diamond":
+                    cx, cy = (x1 + x2) // 2, (y1 + y2) // 2
+                    draw.polygon([(cx, y1), (x2, cy), (cx, y2), (x1, cy)], fill=color)
 
-            elif shape == "star":
-                cx, cy = (x1 + x2) / 2, (y1 + y2) / 2
-                outer = (box_size - 2) / 2
-                inner = outer * 0.4
-                pts = []
-                for i in range(10):
-                    angle = math.pi * i / 5 - math.pi / 2
-                    rv = outer if i % 2 == 0 else inner
-                    pts.append((cx + rv * math.cos(angle), cy + rv * math.sin(angle)))
-                draw.polygon(pts, fill=color)
+                elif shape == "gapped":
+                    gap = max(1, int(box_size * module_gap))
+                    draw.rectangle([x1 + gap, y1 + gap, x2 - gap, y2 - gap], fill=color)
 
-            elif shape == "vertical_bar":
-                gap = int(box_size * 0.2)
-                draw.rectangle([x1 + gap, y1, x2 - gap, y2], fill=color)
+                elif shape == "star":
+                    cx, cy = (x1 + x2) / 2, (y1 + y2) / 2
+                    outer = (box_size - 2) / 2
+                    inner = outer * 0.4
+                    pts = []
+                    for i in range(10):
+                        angle = math.pi * i / 5 - math.pi / 2
+                        rv = outer if i % 2 == 0 else inner
+                        pts.append((cx + rv * math.cos(angle), cy + rv * math.sin(angle)))
+                    draw.polygon(pts, fill=color)
 
-            elif shape == "horizontal_bar":
-                gap = int(box_size * 0.2)
-                draw.rectangle([x1, y1 + gap, x2, y2 - gap], fill=color)
+                elif shape == "vertical_bar":
+                    gap = int(box_size * 0.2)
+                    draw.rectangle([x1 + gap, y1, x2 - gap, y2], fill=color)
 
-            else:  # square
-                draw.rectangle([x1, y1, x2 + 1, y2 + 1], fill=color)
+                elif shape == "horizontal_bar":
+                    gap = int(box_size * 0.2)
+                    draw.rectangle([x1, y1 + gap, x2, y2 - gap], fill=color)
+
+                else:  # square
+                    draw.rectangle([x1, y1, x2 + 1, y2 + 1], fill=color)
 
     if logo_path:
         try:
@@ -178,6 +221,6 @@ def render_png(
     if fmt in ("JPG", "JPEG"):
         img.convert("RGB").save(buf, format="JPEG", quality=95)
     else:
-        img.save(buf, format="PNG", optimize=True)
+        img.save(buf, format="PNG")
     buf.seek(0)
     return buf

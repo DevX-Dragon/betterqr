@@ -19,11 +19,16 @@ def wifi_string(ssid: str, password: str, security: str = "WPA", hidden: bool = 
 
     if security == "WPA" and (not password or len(password) < 8):
         raise ValueError("WPA password must be at least 8 characters long.")
-    if security == "WEP" and password and not re.fullmatch(
-        r"^[0-9A-Fa-f]{5}$|^[0-9A-Fa-f]{13}$|^[0-9A-Fa-f]{16}$|^[0-9A-Fa-f]{29}$|^[0-9A-Fa-f]{64}$",
-        password,
-    ):
-        raise ValueError("WEP password must be 5, 13, 16, 29, or 64 hexadecimal characters.")
+    _WEP_HEX_LENGTHS = (10, 26, 32, 58)
+    _WEP_ASCII_LENGTHS = (5, 13, 16, 29)
+    if security == "WEP" and password:
+        is_valid_hex = len(password) in _WEP_HEX_LENGTHS and re.fullmatch(r"[0-9A-Fa-f]+", password)
+        is_valid_ascii = len(password) in _WEP_ASCII_LENGTHS
+        if not (is_valid_hex or is_valid_ascii):
+            raise ValueError(
+                "WEP password must be a 5/13/16/29-character passphrase "
+                "or a 10/26/32/58-digit hexadecimal key."
+            )
     if security == "NOPASS":
         password = ""
 

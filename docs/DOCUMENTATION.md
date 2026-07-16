@@ -4,9 +4,9 @@ Welcome to the comprehensive documentation for BetterQR, a powerful and flexible
 
 ## Table of Contents
 
-1. [Introduction](#introduction)
-2. [Installation](#installation)
-3. [Command-Line Interface (CLI)](#command-line-interface-cli)
+1. [Introduction](#1-introduction)
+2. [Installation](#2-installation)
+3. [Command-Line Interface (CLI)](#3-command-line-interface-cli)
    - [Basic Usage](#basic-usage)
    - [QR Settings](#qr-settings)
    - [Styling](#styling)
@@ -15,8 +15,8 @@ Welcome to the comprehensive documentation for BetterQR, a powerful and flexible
    - [Frames & Labels](#frames--labels)
    - [Animation](#animation)
    - [Data Type Shortcuts](#data-type-shortcuts)
-   - [Output Options](#output-options)
-4. [Python API](#python-api)
+   - [Output & Terminal Preview](#output--terminal-preview)
+4. [Python API](#4-python-api)
    - [QR Class](#qr-class)
      - [Initialization](#initialization)
      - [Styling Methods](#styling-methods)
@@ -36,19 +36,23 @@ Welcome to the comprehensive documentation for BetterQR, a powerful and flexible
      - [Phone](#phone)
      - [Crypto](#crypto)
    - [Batch Generation](#batch-generation)
-5. [Advanced Topics](#advanced-topics)
+5. [Advanced Topics](#5-advanced-topics)
+   - [Micro QR Codes](#micro-qr-codes)
    - [Error Correction Levels](#error-correction-levels)
    - [Transparent Backgrounds](#transparent-backgrounds)
+   - [Contrast Guard & Dark Mode](#contrast-guard--dark-mode)
    - [Logo Sizing and Scannability](#logo-sizing-and-scannability)
-6. [Troubleshooting](#troubleshooting)
-7. [Contributing](#contributing)
-8. [License](#license)
+6. [Troubleshooting](#6-troubleshooting)
+7. [Contributing](#7-contributing)
+8. [License](#8-license)
+
+---
 
 ## 1. Introduction
 
 BetterQR is a Python library designed to generate highly customizable QR codes. Unlike many other QR code libraries, BetterQR is built from the ground up in pure Python, meaning it has zero external dependencies for the core QR generation logic. It provides both a convenient command-line interface (CLI) for quick generation and a flexible Python API for programmatic control.
 
-Key features include advanced visual styling options such as custom module shapes, gradient fills, embedded logos, decorative frames, and even animated QR codes. It also simplifies the creation of complex data-type QR codes (e.g., Wi-Fi, vCard) through dedicated helper classes.
+Key features include advanced visual styling options such as custom module shapes, gradient fills, embedded logos, decorative frames, and even animated QR codes. It also simplifies the creation of complex data-type QR codes (e.g., Wi-Fi, vCard, Crypto) through dedicated helper classes. **Version 2.0.0** introduces Micro QR support, enhanced animation effects, and terminal preview capabilities.
 
 ## 2. Installation
 
@@ -61,10 +65,13 @@ pip install betterqr
 For development purposes, you can install from source:
 
 ```bash
+```bash
 git clone https://github.com/DevX-Dragon/BetterQR.git
 cd BetterQR
 pip install -e .
 ```
+
+---
 
 ## 3. Command-Line Interface (CLI)
 
@@ -93,7 +100,7 @@ betterqr "Hello, BetterQR!" text_qr.png
 Display a QR code in the terminal:
 
 ```bash
-betterqr "https://example.com" --display
+betterqr "https://example.com" --print
 ```
 
 ### QR Settings
@@ -102,15 +109,16 @@ These options control the fundamental properties of the QR code:
 
 | Option | Short | Description |
 |--------|-------|-------------|
-| `--ecc` | `-e` | Error correction level: `L`, `M`, `Q`, `H` (default: `M`) |
-| `--version` | `-v` | QR code version (1-40, auto-detected by default) |
+| `--type` | | QR code type: `standard` (v1-40) or `micro` (M1-M4) [default: standard] |
+| `--ecc` | `-e` | Error correction level: `L`, `M`, `Q`, `H` (default: `M`). Micro QR supports L/M/Q. |
+| `--version` | `-v` | QR code version (1-40 for standard, 1-4 for micro; auto-detected by default) |
 | `--box-size` | `-b` | Size of each module in pixels (default: 10) |
 | `--border` | `-bd` | Border size in modules (default: 4) |
 
 Example:
 
 ```bash
-betterqr "https://example.com" qr.png --ecc H --box-size 15 --border 2
+betterqr "https://example.com" qr.png --type micro --ecc L
 ```
 
 ### Styling
@@ -119,15 +127,15 @@ Customize the appearance of your QR code with various styling options:
 
 | Option | Short | Description |
 |--------|-------|-------------|
-| `--fill` | `-f` | Fill color in hex format (default: `#000000`) |
-| `--back` | `-bk` | Background color in hex format (default: `#FFFFFF`) |
-| `--shape` | `-s` | Module shape: `square`, `circle`, `rounded`, `diamond`, `star`, `gapped`, `vbar`, `hbar` (default: `square`) |
-| `--radius` | `-r` | Corner radius for rounded shapes (0-1, default: 0.5) |
+| `--fill` | `-f` | Fill color in hex format or `transparent` (default: `#000000`) |
+| `--back` | `-bk` | Background color in hex format or `transparent` (default: `#FFFFFF`) |
+| `--shape` | `-s` | Module shape: `square`, `circle`, `rounded`, `diamond`, `star`, `gapped`, `vertical_bar`, `horizontal_bar` (default: `square`) |
+| `--finder`| | Separate color for the 3 finder squares |
 
 Example:
 
 ```bash
-betterqr "https://example.com" styled_qr.png --fill "#6C3082" --back "#F3E8FF" --shape circle --radius 0.8
+betterqr "https://example.com" styled_qr.png --fill "#6C3082" --back "#F3E8FF" --shape circle --finder "#FF0000"
 ```
 
 ### Gradients
@@ -136,15 +144,13 @@ Apply stunning gradient fills to your QR code:
 
 | Option | Short | Description |
 |--------|-------|-------------|
-| `--gradient-start` | `-gs` | Starting color for gradient in hex format |
-| `--gradient-end` | `-ge` | Ending color for gradient in hex format |
-| `--gradient-direction` | `-gd` | Gradient direction: `linear`, `radial` (default: `linear`) |
-| `--gradient-angle` | `-ga` | Angle for linear gradient in degrees (0-360, default: 45) |
+| `--gradient` | | Two colors for a gradient fill. Example: `--gradient "#FF6B6B" "#4ECDC4"` |
+| `--gradient-dir` | `-gd` | Gradient direction: `horizontal`, `vertical`, `diagonal`, `radial` (default: `diagonal`) |
 
 Example:
 
 ```bash
-betterqr "Hello Gradient" gradient_qr.png --gradient-start "#FF6B6B" --gradient-end "#4ECDC4" --gradient-direction radial
+betterqr "Hello Gradient" gradient_qr.png --gradient "#FF6B6B" "#4ECDC4" --gradient-dir radial
 ```
 
 ### Logo Embedding
@@ -154,9 +160,8 @@ Embed logos or images in the center of your QR code:
 | Option | Short | Description |
 |--------|-------|-------------|
 | `--logo` | `-l` | Path to logo image file |
-| `--logo-ratio` | `-lr` | Logo size ratio (0-0.4, default: 0.3) |
+| `--logo-ratio` | `-lr` | Logo size ratio (0.1-0.35, default: 0.25) |
 | `--logo-shape` | `-ls` | Logo shape: `square`, `circle`, `rounded` (default: `square`) |
-| `--logo-padding` | `-lp` | Padding around logo (0-0.2, default: 0.05) |
 
 Example:
 
@@ -172,17 +177,17 @@ Add decorative frames and text labels to your QR codes:
 
 | Option | Short | Description |
 |--------|-------|-------------|
-| `--frame` | `-fr` | Frame style: `simple`, `rounded`, `double`, `shadow` |
+| `--frame` | `-fr` | Frame style: `simple`, `rounded`, `double`, `shadow`, `fancy` |
 | `--frame-color` | `-fc` | Frame color in hex format |
 | `--label` | `-lb` | Text label to display |
-| `--label-position` | `-lbp` | Label position: `top`, `bottom` (default: `bottom`) |
-| `--label-font-size` | `-lbfs` | Label font size in pixels (default: 20) |
-| `--label-color` | `-lbc` | Label text color in hex format (default: `#000000`) |
+| `--label-above` | | Place label above the QR instead of below |
+| `--label-size` | | Label font size in pixels (default: 14) |
+| `--label-color` | | Label text color in hex format (default: `#000000`) |
 
 Example:
 
 ```bash
-betterqr "https://example.com" framed_qr.png --frame shadow --frame-color "#333333" --label "Visit Us!" --label-position top
+betterqr "https://example.com" framed_qr.png --frame fancy --label "Scan Me!" --label-above
 ```
 
 ### Animation
@@ -191,15 +196,15 @@ Generate animated QR codes with various effects:
 
 | Option | Short | Description |
 |--------|-------|-------------|
-| `--effect` | `-eff` | Animation effect: `shimmer`, `fade`, `scan`, `pulse`, `matrix`, `wave` |
+| `--effect` | `-eff` | Animation effect: `shimmer`, `fade`, `scan`, `pulse`, `build`, `matrix`, `wave`, `blink`, `typewriter`, `rotate` |
 | `--frames` | `-fr` | Number of animation frames (default: 20) |
-| `--fps` | `-fps` | Frames per second (default: 10) |
-| `--duration` | `-dur` | Total animation duration in seconds |
+| `--fps` | `-fps` | Frames per second (default: 15) |
+| `--accent` | | Accent color for effects like `rotate` or `typewriter` |
 
 Example:
 
 ```bash
-betterqr "Animated QR" animated_qr.gif --effect matrix --frames 30 --fps 12
+betterqr "Animated QR" animated_qr.gif --effect rotate --accent "#3B82F6" --frames 30 --fps 15
 ```
 
 ### Data Type Shortcuts
@@ -207,55 +212,45 @@ betterqr "Animated QR" animated_qr.gif --effect matrix --frames 30 --fps 12
 Generate QR codes for specific data types using convenient shortcuts:
 
 #### WiFi QR Code
-
 ```bash
-betterqr wifi "MyNetwork:MyPassword:WPA" wifi_qr.png
+betterqr --wifi MySSID MyPassword --security WPA
 ```
 
 #### vCard (Contact) QR Code
-
 ```bash
-betterqr vcard "Jane Doe:+1-555-1234:jane@example.com:Acme Corp" vcard_qr.png
+betterqr --contact "Jane Doe" --phone "+1-555-1234" --email "jane@example.com" --org "Acme Corp"
 ```
 
 #### SMS QR Code
-
 ```bash
-betterqr sms "+1-555-1234:Hello World" sms_qr.png
+betterqr --sms "+1-555-1234" "Hello World"
 ```
 
 #### Email QR Code
-
 ```bash
-betterqr email "user@example.com:Subject:Message Body" email_qr.png
+betterqr --email "user@example.com" "Subject" "Message Body"
 ```
 
 #### Phone QR Code
-
 ```bash
-betterqr phone "+1-555-1234" phone_qr.png
+betterqr --phone "+1-555-1234"
 ```
 
 #### Geo-Location QR Code
-
 ```bash
-betterqr geo "40.7128:-74.0060" geo_qr.png
+betterqr --geo 40.7128 -74.0060
 ```
 
-### Output Options
+### Output & Terminal Preview
 
 | Option | Short | Description |
 |--------|-------|-------------|
-| `--format` | `-fmt` | Output format: `png`, `jpg`, `svg`, `gif` (default: `png`) |
-| `--quality` | `-q` | JPEG quality (0-100, default: 95) |
-| `--display` | `-d` | Display QR code in terminal instead of saving |
-| `--optimize` | `-opt` | Optimize output file size |
+| `--print` | | Print QR code to terminal |
+| `--invert`| | Invert terminal colors (for dark-background terminals) |
+| `--terminal-style` | | Terminal render style: `block`, `ascii`, `compact` (default: `block`) |
+| `--info`  | | Print QR code metadata (version, size, mode, etc.) |
 
-Example:
-
-```bash
-betterqr "https://example.com" qr.svg --format svg
-```
+---
 
 ## 4. Python API
 
@@ -276,17 +271,15 @@ qr = QR(
     data="https://example.com",
     ecc="H",  # Error correction level
     version=None,  # Auto-detect
-    box_size=10,
-    border=4
+    qr_type="standard"  # "standard" or "micro"
 )
 ```
 
 **Parameters:**
 - `data` (str): The data to encode in the QR code
 - `ecc` (str): Error correction level - `L`, `M`, `Q`, or `H` (default: `M`)
-- `version` (int, optional): QR code version (1-40). If None, auto-detected
-- `box_size` (int): Size of each module in pixels (default: 10)
-- `border` (int): Border size in modules (default: 4)
+- `version` (int, optional): QR code version (1-40 for standard, 1-4 for micro). If None, auto-detected
+- `qr_type` (str): `standard` or `micro` (default: `standard`)
 
 #### Styling Methods
 
@@ -294,19 +287,27 @@ qr = QR(
 
 ```python
 qr = QR("https://example.com").style(
-    fill_color="#6C3082",
-    back_color="#F3E8FF",
+    fill="#6C3082",
+    back="#F3E8FF",
     shape="circle",
-    radius=0.8
+    finder="#FF0000",
+    box_size=10,
+    border=4,
+    dark_mode=False,
+    auto_fix_contrast=False
 )
 qr.save("styled_qr.png")
 ```
 
 **Parameters:**
-- `fill_color` (str): Fill color in hex format (default: `#000000`)
-- `back_color` (str): Background color in hex format (default: `#FFFFFF`)
-- `shape` (str): Module shape - `square`, `circle`, `rounded`, `diamond`, `star`, `gapped`, `vbar`, `hbar`
-- `radius` (float): Corner radius for rounded shapes (0-1)
+- `fill` (str): Fill color in hex format (default: `#000000`)
+- `back` (str): Background color in hex format (default: `#FFFFFF`)
+- `shape` (str): Module shape - `square`, `circle`, `rounded`, `diamond`, `star`, `gapped`, `vertical_bar`, `horizontal_bar`
+- `finder` (str): Separate color for finder patterns
+- `box_size` (int): Pixels per module
+- `border` (int): Quiet zone width in modules
+- `dark_mode` (bool): Invert colors and optimize for dark themes
+- `auto_fix_contrast` (bool): Automatically adjust fill color if contrast is too low
 
 **gradient()** - Apply gradient fill to the QR code
 
@@ -314,8 +315,7 @@ qr.save("styled_qr.png")
 qr = QR("Hello Gradient").gradient(
     start_color="#FF6B6B",
     end_color="#4ECDC4",
-    direction="radial",
-    angle=45
+    direction="radial"
 )
 qr.save("gradient_qr.png")
 ```
@@ -323,8 +323,7 @@ qr.save("gradient_qr.png")
 **Parameters:**
 - `start_color` (str): Starting color in hex format
 - `end_color` (str): Ending color in hex format
-- `direction` (str): `linear` or `radial` (default: `linear`)
-- `angle` (int): Angle for linear gradient in degrees (0-360)
+- `direction` (str): `linear`, `radial`, `horizontal`, `vertical`, `diagonal` (default: `diagonal`)
 
 #### Logo Methods
 
@@ -332,19 +331,25 @@ qr.save("gradient_qr.png")
 
 ```python
 qr = QR("https://mysite.com", ecc="H").logo(
-    image_path="logo.png",
-    ratio=0.3,
+    path="logo.png",
+    ratio=0.25,
     shape="rounded",
-    padding=0.05
+    padding=2,
+    padding_color="#FFFFFF",
+    border=0,
+    border_width=2
 )
 qr.save("qr_with_logo.png")
 ```
 
 **Parameters:**
-- `image_path` (str): Path to the logo image file
-- `ratio` (float): Logo size ratio (0-0.4, default: 0.3)
+- `path` (str): Path to the logo image file
+- `ratio` (float): Logo size ratio (0.1-0.35, default: 0.25)
 - `shape` (str): Logo shape - `square`, `circle`, `rounded` (default: `square`)
-- `padding` (float): Padding around logo (0-0.2, default: 0.05)
+- `padding` (int): Padding around logo in pixels (default: 2)
+- `padding_color` (str): Color of the padding area
+- `border` (int): Border color (if any)
+- `border_width` (int): Width of the logo border
 
 #### Frame & Label Methods
 
@@ -354,33 +359,32 @@ qr.save("qr_with_logo.png")
 qr = QR("https://example.com").frame(
     style="shadow",
     color="#333333",
-    width=20
+    width=40,
+    radius=20,
+    label="Visit Us!",
+    label_position="bottom"
 )
 qr.save("framed_qr.png")
 ```
 
 **Parameters:**
-- `style` (str): Frame style - `simple`, `rounded`, `double`, `shadow`
+- `style` (str): Frame style - `simple`, `rounded`, `double`, `shadow`, `fancy`
 - `color` (str): Frame color in hex format
 - `width` (int): Frame width in pixels
+- `radius` (int): Corner radius for rounded frames
+- `label` (str): Optional text label
+- `label_position` (str): `top` or `bottom`
 
-**label()** - Add a text label
+**label()** - Shortcut to add a text label
 
 ```python
 qr = QR("https://example.com").label(
     text="Visit Us!",
-    position="top",
-    font_size=20,
-    color="#000000"
+    color="#000000",
+    size=14,
+    position="bottom"
 )
-qr.save("labeled_qr.png")
 ```
-
-**Parameters:**
-- `text` (str): Label text
-- `position` (str): `top` or `bottom` (default: `bottom`)
-- `font_size` (int): Font size in pixels (default: 20)
-- `color` (str): Text color in hex format
 
 #### Animation Methods
 
@@ -390,319 +394,149 @@ qr.save("labeled_qr.png")
 qr = QR("Animated QR").animate(
     effect="matrix",
     frames=30,
-    fps=12
+    fps=15,
+    accent="#3B82F6"
 )
 qr.save("animated_qr.gif")
 ```
 
 **Parameters:**
-- `effect` (str): Animation effect - `shimmer`, `fade`, `scan`, `pulse`, `matrix`, `wave`
+- `effect` (str): Animation effect - `shimmer`, `fade`, `scan`, `pulse`, `build`, `matrix`, `wave`, `blink`, `typewriter`, `rotate`
 - `frames` (int): Number of animation frames (default: 20)
-- `fps` (int): Frames per second (default: 10)
-- `duration` (float, optional): Total animation duration in seconds
+- `fps` (int): Frames per second (default: 15)
+- `accent` (str): Accent color for certain effects
+- `loop` (int): Number of loops (0 for infinite)
 
 #### Output Methods
 
 **save()** - Save the QR code to a file
-
 ```python
-qr = QR("https://example.com").save(
-    filename="qr.png",
-    format="png",
-    quality=95
-)
+qr.save("qr.png") # Supports .png, .jpg, .svg, .gif, .pdf
 ```
 
-**Parameters:**
-- `filename` (str): Output filename
-- `format` (str): Output format - `png`, `jpg`, `svg`, `gif` (auto-detected from filename)
-- `quality` (int): JPEG quality (0-100, default: 95)
-
-**display()** - Display the QR code in the terminal
-
+**to_terminal()** - Get terminal-formatted string
 ```python
-qr = QR("https://example.com").display()
+print(qr.to_terminal(style="compact", invert=True))
 ```
 
-**get_image()** - Get the QR code as a PIL Image object
-
+**info()** - Get metadata dictionary
 ```python
-qr = QR("https://example.com")
-image = qr.get_image()
-# Use PIL Image methods
-image.show()
+print(qr.info()) # Returns version, ecc, type, size, etc.
 ```
 
 #### Metadata Properties
 
-**version** - Get the QR code version
+- `version_label`: Human-readable version (e.g., 'v7', 'M2')
+- `qr_type`: "standard" or "micro"
+- `module_count`: Number of modules across one side
 
-```python
-qr = QR("https://example.com")
-print(qr.version)  # Returns the version number
-```
-
-**data_capacity** - Get the data capacity for the current version
-
-```python
-qr = QR("https://example.com")
-print(qr.data_capacity)  # Returns the maximum data capacity
-```
-
-**size** - Get the QR code size in pixels
-
-```python
-qr = QR("https://example.com")
-print(qr.size)  # Returns the size in pixels
-```
+---
 
 ### Data Helper Classes
 
 BetterQR provides convenient helper classes for generating QR codes for specific data types.
 
 #### WiFi
-
-Generate WiFi connection QR codes:
-
 ```python
 from betterqr import QR, WiFi
-
-wifi = WiFi(
-    ssid="MyNetwork",
-    password="SecurePassword123",
-    security="WPA",  # WPA, WEP, or nopass
-    hidden=False
-)
-
-qr = QR(wifi)
-qr.save("wifi_qr.png")
+wifi = WiFi(ssid="MyNetwork", password="SecurePassword123", security="WPA")
+qr = QR(wifi).save("wifi_qr.png")
 ```
-
-**Parameters:**
-- `ssid` (str): Network name
-- `password` (str): Network password
-- `security` (str): Security type - `WPA`, `WEP`, `nopass` (default: `WPA`)
-- `hidden` (bool): Whether the network is hidden (default: False)
 
 #### VCard
-
-Generate contact information QR codes:
-
 ```python
 from betterqr import QR, VCard
-
-vcard = VCard(
-    name="Jane Doe",
-    phone="+1-555-1234",
-    email="jane@example.com",
-    organization="Acme Corp",
-    url="https://example.com",
-    address="123 Main St, City, State 12345"
-)
-
-qr = QR(vcard)
-qr.save("contact_qr.png")
+vcard = VCard(name="Jane Doe", phone="+1-555-1234", email="jane@example.com", org="Acme Corp")
+qr = QR(vcard).save("contact_qr.png")
 ```
-
-**Parameters:**
-- `name` (str): Full name
-- `phone` (str, optional): Phone number
-- `email` (str, optional): Email address
-- `organization` (str, optional): Organization name
-- `url` (str, optional): Website URL
-- `address` (str, optional): Physical address
 
 #### MeCard
-
-Generate MeCard format contact QR codes (compatible with older devices):
-
 ```python
 from betterqr import QR, MeCard
-
-mecard = MeCard(
-    name="John Smith",
-    phone="+1-555-5678",
-    email="john@example.com",
-    url="https://example.com"
-)
-
-qr = QR(mecard)
-qr.save("mecard_qr.png")
+mecard = MeCard(name="John Smith", phone="+1-555-5678", email="john@example.com")
+qr = QR(mecard).save("mecard_qr.png")
 ```
-
-**Parameters:**
-- `name` (str): Full name
-- `phone` (str, optional): Phone number
-- `email` (str, optional): Email address
-- `url` (str, optional): Website URL
 
 #### GeoLocation
-
-Generate location-based QR codes:
-
 ```python
 from betterqr import QR, GeoLocation
-
-geo = GeoLocation(
-    latitude=40.7128,
-    longitude=-74.0060,
-    altitude=10,  # Optional
-    query="New York City"  # Optional
-)
-
-qr = QR(geo)
-qr.save("location_qr.png")
+geo = GeoLocation(lat=40.7128, lon=-74.0060, altitude=10)
+qr = QR(geo).save("location_qr.png")
 ```
-
-**Parameters:**
-- `latitude` (float): Latitude coordinate
-- `longitude` (float): Longitude coordinate
-- `altitude` (float, optional): Altitude in meters
-- `query` (str, optional): Location query string
 
 #### Event
-
-Generate calendar event QR codes:
-
 ```python
 from betterqr import QR, Event
-
-event = Event(
-    title="Conference 2024",
-    start_time="20240615T090000",
-    end_time="20240615T170000",
-    location="Convention Center",
-    description="Annual tech conference"
-)
-
-qr = QR(event)
-qr.save("event_qr.png")
+event = Event(summary="Meeting", dtstart="20240615T090000", dtend="20240615T100000")
+qr = QR(event).save("event_qr.png")
 ```
-
-**Parameters:**
-- `title` (str): Event title
-- `start_time` (str): Start time in format YYYYMMDDTHHMMSS
-- `end_time` (str): End time in format YYYYMMDDTHHMMSS
-- `location` (str, optional): Event location
-- `description` (str, optional): Event description
 
 #### SMS
-
-Generate SMS message QR codes:
-
 ```python
 from betterqr import QR, SMS
-
-sms = SMS(
-    phone_number="+1-555-1234",
-    message="Hello from BetterQR!"
-)
-
-qr = QR(sms)
-qr.save("sms_qr.png")
+sms = SMS(phone="+1-555-1234", body="Hello!")
+qr = QR(sms).save("sms_qr.png")
 ```
-
-**Parameters:**
-- `phone_number` (str): Recipient phone number
-- `message` (str, optional): Message text
 
 #### Email
-
-Generate email QR codes:
-
 ```python
 from betterqr import QR, Email
-
-email = Email(
-    address="user@example.com",
-    subject="Hello",
-    body="This is a test email"
-)
-
-qr = QR(email)
-qr.save("email_qr.png")
+email = Email(address="user@example.com", subject="Hello", body="Body text")
+qr = QR(email).save("email_qr.png")
 ```
-
-**Parameters:**
-- `address` (str): Email address
-- `subject` (str, optional): Email subject
-- `body` (str, optional): Email body
 
 #### Phone
-
-Generate phone call QR codes:
-
 ```python
 from betterqr import QR, Phone
-
-phone = Phone(phone_number="+1-555-1234")
-
-qr = QR(phone)
-qr.save("phone_qr.png")
+phone = Phone(number="+1-555-1234")
+qr = QR(phone).save("phone_qr.png")
 ```
-
-**Parameters:**
-- `phone_number` (str): Phone number to call
 
 #### Crypto
-
-Generate cryptocurrency payment QR codes:
-
 ```python
 from betterqr import QR, Crypto
-
-crypto = Crypto(
-    currency="bitcoin",  # bitcoin, ethereum, etc.
-    address="1A1z7agoat2LLLLL...",
-    amount=0.5
-)
-
-qr = QR(crypto)
-qr.save("crypto_qr.png")
+crypto = Crypto(coin="bitcoin", address="1A1z7agoat2LLLLL...", amount=0.5)
+qr = QR(crypto).save("crypto_qr.png")
 ```
-
-**Parameters:**
-- `currency` (str): Cryptocurrency type
-- `address` (str): Wallet address
-- `amount` (float, optional): Amount to send
 
 ### Batch Generation
 
 Generate multiple QR codes efficiently:
 
 ```python
-from betterqr import QR
-
-data_list = [
-    "https://example1.com",
-    "https://example2.com",
-    "https://example3.com"
+from betterqr import batch
+items = [
+    ("https://example1.com", "qr1.png"),
+    ("https://example2.com", "qr2.png")
 ]
-
-for i, data in enumerate(data_list):
-    qr = QR(data)
-    qr.save(f"qr_{i}.png")
+batch(items, output_dir="qrs", fill="#1D4ED8", shape="rounded")
 ```
 
-For more advanced batch operations with styling:
-
-```python
-from betterqr import QR
-
-urls = ["https://example1.com", "https://example2.com"]
-colors = ["#FF6B6B", "#4ECDC4"]
-
-for url, color in zip(urls, colors):
-    qr = QR(url).style(fill_color=color)
-    qr.save(f"qr_{color[1:]}.png")
-```
+---
 
 ## 5. Advanced Topics
 
+### Micro QR Codes
+
+Micro QR codes are a compact version of standard QR codes for space-constrained labels.  
+BetterQR auto-selects the smallest compatible version when `version=None`.
+
+| Symbol | Size  | Max Numeric | Max Alpha | Max Bytes | ECC levels |
+|--------|-------|-------------|-----------|-----------|------------|
+| M1     | 11×11 | 5           | —         | —         | M only     |
+| M2     | 13×13 | 10 (L) / 8 (M) | 6 (L) / 5 (M) | — | L, M |
+| M3     | 15×15 | 23 (L) / 18 (M) | 14 (L) / 11 (M) | 9 (L) / 7 (M) | L, M |
+| M4     | 17×17 | 35 (L) / 30 (M) / 21 (Q) | 21 / 18 / 13 | 15 / 13 / 9 | L, M, Q |
+
+```python
+QR("1234",        qr_type="micro", version=1, ecc="M").save("m1.png")
+QR("HELLO WORLD", qr_type="micro").save("auto.png")   # auto-selects version
+QR("Hello!",      qr_type="micro", version=4, ecc="L").save("m4.png")
+```
+
+> **Note:** Micro QR does not support ECC H. M1 is numeric-only. M2 does not support byte mode.
+
 ### Error Correction Levels
-
-QR codes support four error correction levels, allowing recovery from damaged or obscured codes:
-
 | Level | Recovery | Use Case |
 |-------|----------|----------|
 | L | ~7% | General use, low risk |
@@ -710,119 +544,34 @@ QR codes support four error correction levels, allowing recovery from damaged or
 | Q | ~25% | High-risk environments |
 | H | ~30% | With logos or heavy styling |
 
-Use higher error correction levels when embedding logos or applying heavy visual effects:
-
-```python
-from betterqr import QR
-
-# For QR codes with logos
-qr = QR("https://example.com", ecc="H").logo("logo.png")
-qr.save("qr_with_logo.png")
-```
-
 ### Transparent Backgrounds
+Generate QR codes with transparent backgrounds by setting `back="transparent"` in the `style()` method. This is only supported for PNG and SVG formats.
 
-Generate QR codes with transparent backgrounds (PNG format):
+### Contrast Guard & Dark Mode
+BetterQR includes a **Luminance Guard** that calculates the contrast ratio between your fill and background colors. If the ratio is below 4.5 (WCAG standard), a `LowContrastWarning` is issued.
+Using `dark_mode=True` in `style()` will automatically invert colors for dark backgrounds and enable `auto_fix_contrast` to ensure scannability.
 
-```python
-from betterqr import QR
-
-qr = QR("https://example.com").style(
-    back_color="transparent"
-)
-qr.save("transparent_qr.png")
-```
-
-### Logo Sizing and Scannability
-
-Guidelines for embedding logos while maintaining scannability:
-
-**Logo Size Ratio:**
-- 0.2 - Very conservative, maximum scannability
-- 0.3 - Recommended balance (default)
-- 0.4 - Maximum size, requires ECC level H
-- >0.4 - Not recommended
-
-**Best Practices:**
-1. Always use ECC level H when embedding logos
-2. Keep logo ratio between 0.2 and 0.3 for best results
-3. Use square or rounded logo shapes for better integration
-4. Test scannability with multiple QR code readers
-5. Add padding around the logo to prevent overlap with QR data
-
-Example of optimal logo embedding:
-
-```python
-from betterqr import QR
-
-qr = QR(
-    data="https://example.com",
-    ecc="H"  # Use highest error correction
-).logo(
-    image_path="logo.png",
-    ratio=0.3,  # Optimal ratio
-    shape="rounded",
-    padding=0.05
-)
-qr.save("optimized_qr.png")
-```
+---
 
 ## 6. Troubleshooting
 
 ### QR Code Not Scanning
+1. **Increase ECC**: Use `ecc="H"`.
+2. **Check Contrast**: Ensure high contrast between fill and back colors.
+3. **Logo Size**: Reduce `logo_ratio` to 0.2.
+4. **Quiet Zone**: Ensure `border` is at least 4.
 
-**Problem:** Generated QR code won't scan properly
-
-**Solutions:**
-1. Increase error correction level: Use `ecc="H"` instead of `ecc="M"`
-2. Reduce logo size: Set `logo_ratio` to 0.2 or 0.25
-3. Increase box size: Use larger `box_size` values (15-20)
-4. Use standard colors: Stick to black on white for maximum compatibility
-5. Test with multiple readers: Try different QR code scanner apps
-
-### Logo Not Appearing
-
-**Problem:** Logo doesn't show in the QR code
-
-**Solutions:**
-1. Verify file path exists and is correct
-2. Ensure image format is supported (PNG, JPG, GIF)
-3. Check that ECC level is set to H: `ecc="H"`
-4. Reduce logo ratio if it's too large
-5. Ensure logo file is readable and not corrupted
-
-### Animation Not Working
-
-**Problem:** Animated GIF not generating correctly
-
-**Solutions:**
-1. Verify output filename ends with `.gif`
-2. Check that `frames` parameter is set (minimum 2)
-3. Ensure `fps` is reasonable (5-30 recommended)
-4. Try reducing the number of frames
-5. Check available disk space
-
-### Memory Issues with Large Batches
-
-**Problem:** Running out of memory when generating many QR codes
-
-**Solutions:**
-1. Generate QR codes in smaller batches
-2. Delete QR objects after saving: `del qr`
-3. Use garbage collection: `import gc; gc.collect()`
-4. Reduce image size: Use smaller `box_size` values
-5. Process files sequentially instead of loading all in memory
+### Animation Issues
+1. **Format**: Ensure filename ends in `.gif`.
+2. **Frames**: Use at least 20 frames for smooth effects.
+3. **Complexity**: Some readers struggle with high-speed animations; keep `fps` between 10-20.
 
 ## 7. Contributing
-
-We welcome contributions to BetterQR! Please see the [CONTRIBUTING.md](CONTRIBUTING.md) file for detailed guidelines on how to contribute.
+We welcome contributions! Please see [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## 8. License
-
-BetterQR is released under the MIT License. See the LICENSE file for details.
+BetterQR is released under the MIT License.
 
 ---
-
 **Last Updated:** 2026
 **Version:** 1.0.0
-

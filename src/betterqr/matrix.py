@@ -3,6 +3,7 @@ QR Code matrix construction: all function patterns, data placement, masking.
 Fully compliant with ISO/IEC 18004:2015.
 """
 from __future__ import annotations
+import functools
 from .tables import (
     ALIGNMENT_POSITIONS, FORMAT_INFO, VERSION_INFO, ECC_BITS,
     MICRO_ECC_TABLE, MICRO_ALIGNMENT_POSITIONS, MICRO_FORMAT_INFO, MICRO_VERSION_INFO
@@ -19,6 +20,15 @@ _MASK_CONDITIONS = [
     lambda r, c: ((r * c) % 2) + ((r * c) % 3) == 0,
     lambda r, c: (((r * c) % 2) + ((r * c) % 3)) % 2 == 0,
     lambda r, c: (((r + c) % 2) + ((r * c) % 3)) % 2 == 0,
+]
+
+# Micro QR uses a distinct set of 4 mask patterns (ISO 18004:2015 Table 10).
+# They correspond to standard QR conditions at indices 1, 4, 6, 7.
+_MICRO_MASK_CONDITIONS = [
+    lambda r, c: r % 2 == 0,                                           # micro mask 0
+    lambda r, c: (r // 2 + c // 3) % 2 == 0,                          # micro mask 1
+    lambda r, c: (((r * c) % 2) + ((r * c) % 3)) % 2 == 0,            # micro mask 2
+    lambda r, c: (((r + c) % 2) + ((r * c) % 3)) % 2 == 0,            # micro mask 3
 ]
 
 _UNSET = -1   # Not yet assigned
@@ -111,17 +121,17 @@ def _place_dark_module(grid, version):
 
 
 def _reserve_format_areas(reserved, size):
-    """Mark format information areas as reserved."""
-    # Around top-left finder
+    """Mark format information areas as reserved (ISO 18004:2015 §7.9.1)."""
+    # Copy 1: top-left finder area
     for i in range(9):
-        reserved[8][i] = True
-        reserved[i][8] = True
-    # Top-right format area
+        reserved[8][i] = True   # row 8, cols 0-8
+        reserved[i][8] = True   # col 8, rows 0-8
+    # Copy 2: top-right area (row 8, cols size-8..size-1)
     for i in range(8):
         reserved[8][size - 1 - i] = True
-    # Bottom-left format area
-    for i in range(7):
-        reserved[size - 7 + i][8] = True
+    # Copy 2: bottom-left area (col 8, rows size-8..size-1)
+    for i in range(8):
+        reserved[size - 1 - i][8] = True
 
 
 def _reserve_version_areas(reserved, size, version):
@@ -139,41 +149,49 @@ def _reserve_version_areas(reserved, size, version):
 
 
 def _write_format_info(grid, ecc_level: str, mask_pattern: int, size: int):
-    """Write format information (15 bits, two copies)."""
+    """Write format information (15 bits, two copies) per ISO 18004:2015 §7.9.1.
+
+    Placement matches segno's verified add_format_info logic:
+      - Copy 1 vertical (col 8): bit i at row i (skip row 6), LSB first
+      - Copy 1 horizontal (row 8): bit (14-i) at col i (skip col 6), MSB first
+      - Copy 2 top-right (row 8): same as vertical bits, cols size-1..size-8
+      - Copy 2 bottom-left (col 8): same as horizontal bits, rows size-1..size-8
+    """
     fmt = FORMAT_INFO[(ecc_level, mask_pattern)]
+    row_eight = grid[8]
 
-    def write_bit(r, c, bit_idx):
-        bit = (fmt >> (14 - bit_idx)) & 1
-        grid[r][c] = bit
-
-    # Copy 1: around top-left finder
-    for i in range(6):
-        write_bit(8, i, i)
-    write_bit(8, 7, 6)
-    write_bit(8, 8, 7)
-    write_bit(7, 8, 8)
-    for i in range(5, -1, -1):
-        write_bit(i, 8, 14 - i)
-
+    voffset = 0
+    hoffset = 0
     for i in range(8):
-        write_bit(8, size - 1 - i, i)
-    for i in range(7):
-        write_bit(size - 7 + i, 8, 8 + i)
+        vbit = (fmt >> i) & 1
+        hbit = (fmt >> (14 - i)) & 1
+        if i == 6:
+            voffset = 1   # skip row 6 (timing)
+            hoffset = 1   # skip col 6 (timing)
+        # Copy 1
+        grid[i + voffset][8] = vbit     # vertical strip, col 8
+        row_eight[i + hoffset] = hbit   # horizontal strip, row 8
+
+        # Copy 2
+        row_eight[size - 1 - i] = vbit          # top-right, row 8
+        grid[size - 1 - i][8] = hbit             # bottom-left, col 8
+
+    # Dark module (always dark)
+    grid[size - 8][8] = _DARK
 
 
 def _write_micro_format_info(grid, ecc_level: str, mask_pattern: int, version: int, size: int):
-    """Write Micro QR format information (12 bits)."""
-    fmt = MICRO_FORMAT_INFO[(ecc_level, mask_pattern)]
+    """Write Micro QR format information (ISO/IEC 18004:2015 §7.9.2).
 
-    def write_bit(r, c, bit_idx):
-        bit = (fmt >> (11 - bit_idx)) & 1
-        grid[r][c] = bit
-
+    15-bit format word split across two strips (8 positions each, sharing corner (8,8)):
+      - Vertical:   bit i      → grid[i+1][8],  i = 0..7  (rows 1-8, col 8, LSB first)
+      - Horizontal: bit (14-i) → grid[8][i+1],  i = 0..7  (row 8, cols 1-8, MSB first)
+    The corner cell (8, 8) receives bit 7 from both strips (same value, no conflict).
+    """
+    fmt = MICRO_FORMAT_INFO[(version, ecc_level, mask_pattern)]
     for i in range(8):
-        write_bit(i, 8, i)
-
-    for i in range(4):
-        write_bit(8, i, 8 + i)
+        grid[i + 1][8] = (fmt >> i) & 1        # vertical: LSB at row 1
+        grid[8][i + 1] = (fmt >> (14 - i)) & 1  # horizontal: MSB at col 1
 
 def _write_version_info(grid, version: int, size: int):
     """Write version information blocks for versions 7+."""
@@ -188,14 +206,18 @@ def _write_version_info(grid, version: int, size: int):
         grid[c_tr][r_tr] = bit  # mirrored for bottom-left block
 
 
-def _data_placement_order(size: int, reserved) -> list[tuple[int, int]]:
-    """Return (row, col) pairs in QR data placement order (right-to-left column pairs)."""
+def _data_placement_order(size: int, reserved, qr_type: str = "standard") -> list[tuple[int, int]]:
+    """Return (row, col) pairs in QR data placement order (right-to-left column pairs).
+
+    In standard QR col 6 is the vertical timing strip and must be skipped explicitly.
+    In Micro QR col 0 is timing (already reserved), so no special skip is needed.
+    """
     order = []
     col = size - 1
     going_up = True
     while col >= 0:
-        if col == 6:
-            col -= 1  # skip timing column
+        if col == 6 and qr_type == "standard":
+            col -= 1  # skip timing column (standard QR only)
         row_range = range(size - 1, -1, -1) if going_up else range(size)
         for row in row_range:
             for c_offset in (0, 1):
@@ -207,17 +229,29 @@ def _data_placement_order(size: int, reserved) -> list[tuple[int, int]]:
     return order
 
 
-def _apply_mask(grid, mask_pattern: int, reserved) -> list[list[int]]:
+@functools.lru_cache(maxsize=512)
+def _mask_grid(size: int, mask_pattern: int, qr_type: str) -> tuple:
+    """
+    Boolean grid of which cells a mask flips. Depends only on
+    (size, mask_pattern, qr_type), never on the data, so it's cached —
+    generating many codes at the same version becomes a cache lookup
+    instead of re-deriving ~30k+ mask conditions each time.
+    """
+    condition = _MICRO_MASK_CONDITIONS[mask_pattern] if qr_type == "micro" else _MASK_CONDITIONS[mask_pattern]
+    return tuple(tuple(condition(r, c) for c in range(size)) for r in range(size))
+
+
+def _apply_mask(grid, mask_pattern: int, reserved, qr_type: str = "standard") -> list[list[int]]:
     """Return a copy of grid with mask applied to non-reserved modules."""
-    condition = _MASK_CONDITIONS[mask_pattern]
     size = len(grid)
-    result = [row[:] for row in grid]
-    for r in range(size):
-        for c in range(size):
-            if not reserved[r][c] and grid[r][c] != _UNSET:
-                if condition(r, c):
-                    result[r][c] ^= 1
-    return result
+    mask = _mask_grid(size, mask_pattern, qr_type)
+    return [
+        [
+            (v ^ 1) if (v != _UNSET and not reserved[r][c] and mask[r][c]) else v
+            for c, v in enumerate(grid[r])
+        ]
+        for r in range(size)
+    ]
 
 
 def _penalty_score(grid) -> int:
@@ -256,25 +290,31 @@ def _penalty_score(grid) -> int:
             if v == grid[r][c+1] == grid[r+1][c] == grid[r+1][c+1]:
                 score += 3
 
-    # Rule 3: specific patterns in rows/columns
-    pat1 = [1,0,1,1,1,0,1,0,0,0,0]
-    pat2 = [0,0,0,0,1,0,1,1,1,0,1]
+    # Rule 3: specific patterns in rows/columns.
+    # Track an 11-bit rolling window as a plain int instead of slicing out
+    # a fresh 11-element list (or building a string) at every position —
+    # this was the single biggest hotspot in mask scoring.
+    _PAT1 = 0b10111010000  # 1,0,1,1,1,0,1,0,0,0,0
+    _PAT2 = 0b00001011101  # 0,0,0,0,1,0,1,1,1,0,1
+    _WINDOW_MASK = 0x7FF   # 11 bits
+
+    def _count_patterns(values) -> int:
+        n = 0
+        window = 0
+        for i, v in enumerate(values):
+            window = ((window << 1) | v) & _WINDOW_MASK
+            if i >= 10 and (window == _PAT1 or window == _PAT2):
+                n += 1
+        return n
+
     for row in grid:
-        row_list = row
-        for i in range(size - 10):
-            seg = row_list[i:i+11]
-            if seg == pat1 or seg == pat2:
-                score += 40
-    for c in range(size):
-        col = [grid[r][c] for r in range(size)]
-        for i in range(size - 10):
-            seg = col[i:i+11]
-            if seg == pat1 or seg == pat2:
-                score += 40
+        score += 40 * _count_patterns(row)
+    for col in zip(*grid):  # C-level transpose, avoids manual grid[r][c] indexing
+        score += 40 * _count_patterns(col)
 
     # Rule 4: proportion of dark modules
     total = size * size
-    dark = sum(grid[r][c] for r in range(size) for c in range(size))
+    dark = sum(sum(row) for row in grid)
     percent = dark * 100 // total
     prev5 = (percent // 5) * 5
     next5 = prev5 + 5
@@ -347,24 +387,29 @@ def build_matrix(codewords: list[int], version: int, ecc_level: str, qr_type: st
     elif qr_type == "micro":
         _place_finder(grid, 0, 0)
 
+        # Separator: single row 7 and single column 7 (both light)
+        for i in range(8):
+            grid[7][i] = _LIGHT
+            grid[i][7] = _LIGHT
+
+        # Reserve the full 9×9 top-left block (finder 7×7 + separator + format info corner)
         for r in range(9):
             for c in range(9):
                 reserved[r][c] = True
 
-        for i in range(8, size - 8):
+        # Timing patterns: run along ROW 0 and COL 0 from index 8 outward (ISO 18004 §7.3.4)
+        for i in range(8, size):
             val = _DARK if i % 2 == 0 else _LIGHT
-            if grid[6][i] == _UNSET:
-                grid[6][i] = val
-        for i in range(size):
-            reserved[6][i] = True
+            grid[0][i] = val
+            reserved[0][i] = True
+            grid[i][0] = val
+            reserved[i][0] = True
 
-        grid[size - 2][1] = _DARK
-        reserved[size - 2][1] = True
-
-        for i in range(8):
-            reserved[8][i] = True
-        for i in range(7):
-            reserved[i][8] = True
+        # Format information strips (ISO 18004 §7.9.2):
+        #   Vertical: rows 1-8, col 8  |  Horizontal: row 8, cols 1-8
+        for i in range(1, 9):
+            reserved[i][8] = True   # vertical strip: rows 1-8, col 8
+            reserved[8][i] = True   # horizontal strip: row 8, cols 1-8
     elif qr_type == "rmqr":
         rows, cols = size
         _place_finder(grid, 0, 0)
@@ -396,12 +441,33 @@ def build_matrix(codewords: list[int], version: int, ecc_level: str, qr_type: st
 
 
     # --- Place data bits ---
-    bits = []
-    for cw in codewords:
-        for i in range(7, -1, -1):
-            bits.append((cw >> i) & 1)
+    # For M1 (version 1) and M3 (version 3), the last DATA codeword contributes
+    # only its HIGH 4 BITS to the bit stream; ALL ECC codewords follow in full.
+    # (ISO 18004:2015 §8.5.3 / segno make_final_message)
+    if qr_type == "micro" and version in (1, 3):
+        data_cw_count, _, ec_per_block = (
+            MICRO_ECC_TABLE[version][ecc_level]
+        )
+        data_part = codewords[:data_cw_count]
+        ecc_part  = codewords[data_cw_count:]
+        bits = []
+        for cw in data_part[:-1]:           # all but last data CW — full 8 bits
+            for i in range(7, -1, -1):
+                bits.append((cw >> i) & 1)
+        # Last data CW: only HIGH 4 BITS
+        last_cw = data_part[-1]
+        for i in range(7, 3, -1):           # bits 7,6,5,4 (high nibble)
+            bits.append((last_cw >> i) & 1)
+        for cw in ecc_part:                 # ECC codewords — all full 8 bits
+            for i in range(7, -1, -1):
+                bits.append((cw >> i) & 1)
+    else:
+        bits = []
+        for cw in codewords:
+            for i in range(7, -1, -1):
+                bits.append((cw >> i) & 1)
 
-    placement = _data_placement_order(size, reserved)
+    placement = _data_placement_order(size, reserved, qr_type)
     for idx, (r, c) in enumerate(placement):
         grid[r][c] = bits[idx] if idx < len(bits) else 0
 
@@ -409,7 +475,7 @@ def build_matrix(codewords: list[int], version: int, ecc_level: str, qr_type: st
         logo_size_px = logo_info["size_px"]
         logo_padding_px = logo_info["padding_px"]
         box_size = logo_info["box_size"]
-        border = logo_info["border"]
+        border = logo_info["border_modules"]
 
         qr_total_size_px = size * box_size + 2 * border * box_size
         logo_start_px = (qr_total_size_px - logo_size_px) / 2
@@ -436,14 +502,14 @@ def build_matrix(codewords: list[int], version: int, ecc_level: str, qr_type: st
                 grid[r][c] = _LIGHT
                 reserved[r][c] = True
 
-    # --- Evaluate all 8 masks, pick best ---
+    # --- Evaluate all 8 masks (standard) or 4 masks (micro), pick best ---
     best_score = float('inf')
     best_mask = 0
     best_grid = None
 
     num_masks = 8 if qr_type == "standard" else 4
     for mask_pattern in range(num_masks):
-        masked = _apply_mask(grid, mask_pattern, reserved)
+        masked = _apply_mask(grid, mask_pattern, reserved, qr_type)
         if qr_type == "standard":
             _write_format_info(masked, ecc_level, mask_pattern, size)
             _write_version_info(masked, version, size)
