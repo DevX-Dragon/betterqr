@@ -50,7 +50,6 @@ pip install betterqr --upgrade
 
 ---
 
-## Comparission
 ## Why BetterQR?
 
 | | BetterQR | `qrcode` | `segno` |
@@ -66,8 +65,7 @@ pip install betterqr --upgrade
 | CLI included | ✅ | ✅ | ✅ |
 | SVG / PDF / EPS output | ✅ | SVG only | ✅ |
 
-*(Double-check the `qrcode`/`segno` columns against their current docs before publishing —
-this is accurate as of their last stable releases I'm aware of, but library features change.)*
+---
 
 ## Quick Start
 
