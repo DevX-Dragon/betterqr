@@ -162,6 +162,19 @@ QR(VCard("Jane Doe", phone="+15550199", email="jane@example.com")).save("vcard.p
 
 ---
 
-## License
 
-MIT — see [LICENSE](LICENSE)
+<div style="text-align: center;">
+    
+## Documentation
+Check out the [DOCUMENTATION](docs/DOCUMENTATION.md) for an better overview of BetterQR
+
+</div>
+
+
+<div style="text-align: center;">
+    
+## License
+Regsitred under MIT LISCENSE — see [LICENSE](LICENSE)
+
+</div>
+
