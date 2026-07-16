@@ -2,7 +2,7 @@
 
 All notable changes to BetterQR will be documented in this file.
 
-## [2.0.0] - To be officialy released
+## [2.0.0] - 2026-07-16
 
 ### Breaking changes
 - `WiFi`/`VCard`/`MeCard`/`SMS`/etc. now use the correctly-validated, correctly-escaped implementation instead of the (buggy, silently-shadowed) duplicate. In practice this means: WEP passwords are now validated against real key-length rules and will raise `ValueError` if invalid where they previously wouldn't; SSIDs/passwords containing `;`, `,`, or `\` now escape those characters in the output string rather than emitting a malformed `WIFI:` string. No public class or function names changed.
