@@ -156,7 +156,8 @@ QR(VCard("Jane Doe", phone="+15550199", email="jane@example.com")).save("vcard.p
 | M4/M   | 17×17 | 30         | 18        | 13        |
 | M4/Q   | 17×17 | 21         | 13        | 9         |
 
-> **Note:** Micro QR does not support ECC H. Use standard QR for logos.
+> [!NOTE]
+> Micro QR does not support ECC H. Use standard QR for logos.
 
 > **Note:** Micro QR cannot be scanned using normal phone scanners; Only scannable using specialized scanners or microQR specific scanners.
 
