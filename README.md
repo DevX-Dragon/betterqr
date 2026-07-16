@@ -2,7 +2,6 @@
 
 ![image](https://cdn.hackclub.com/019f5645-9668-7849-8133-f085487ec59c/image.png)
 [![Python Version](https://img.shields.io/badge/python-3.10%2B-blue)](https://www.python.org/)
-[![License](https://img.shields.io/github/license/DevX-Dragon/BetterQR)](https://github.com/DevX-Dragon/BetterQR/main/LICENSE)
 [![PyPI - Version](https://img.shields.io/pypi/v/betterqr)](https://pypi.org/project/betterqr/)
 [![PyPI - Downloads](https://img.shields.io/pypi/dm/betterqr)](https://pypi.org/project/betterqr/)
 [![CI](https://github.com/DevX-Dragon/betterqr/actions/workflows/ci.yml/badge.svg)](https://github.com/DevX-Dragon/betterqr/actions/workflows/ci.yml)
