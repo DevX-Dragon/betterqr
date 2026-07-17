@@ -187,7 +187,7 @@ For a more in-depth understanding of BetterQR's capabilities and API, please ref
 
 ## Credits & Acknowledgements
 
-BetterQR is a project by DevX-Dragon. I am![alt text](image.png) grateful for the inspiration and support from the open-source community.
+BetterQR is a project by DevX-Dragon. I am grateful for the inspiration and support from the open-source community.
 
 ---
 
