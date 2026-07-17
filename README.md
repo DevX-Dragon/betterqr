@@ -1,48 +1,56 @@
 <div align="center">
 
-![image](https://cdn.hackclub.com/019f5645-9668-7849-8133-f085487ec59c/image.png)
-[![Python Version](https://img.shields.io/badge/python-3.10%2B-blue)](https://www.python.org/)
-[![PyPI - Version](https://img.shields.io/pypi/v/betterqr)](https://pypi.org/project/betterqr/)
-[![PyPI - Downloads](https://img.shields.io/pypi/dm/betterqr)](https://pypi.org/project/betterqr/)
-[![CI](https://github.com/DevX-Dragon/betterqr/actions/workflows/ci.yml/badge.svg)](https://github.com/DevX-Dragon/betterqr/actions/workflows/ci.yml)
-[![Hackatime - Time Spent](https://hackatime.hackclub.com/api/v1/badge/U0A0M7YSS84/devx-dragon/betterqr)](https://hackatime.hackclub.com/my/projects/33.BetterQR)
+![BetterQR](https://cdn.hackclub.com/019f5645-9668-7849-8133-f085487ec59c/image.png)
+---
+[![Python Version](https://img.shields.io/badge/python-3.10%2B-blue)](https://www.python.org/)[![PyPI - Version](https://img.shields.io/pypi/v/betterqr)](https://pypi.org/project/betterqr/)[![PyPI - Downloads](https://img.shields.io/pypi/dm/betterqr)](https://pypi.org/project/betterqr/)[![CI](https://github.com/DevX-Dragon/betterqr/actions/workflows/ci.yml/badge.svg)](https://github.com/DevX-Dragon/betterqr/actions/workflows/ci.yml)[![Hackatime - Time Spent](https://hackatime.hackclub.com/api/v1/badge/U0A0M7YSS84/devx-dragon/betterqr)](https://hackatime.hackclub.com/my/projects/33.BetterQR)
 
 </div>
 
 # BetterQR
 
-BetterQR is a powerful, pure-Python QR code generator with zero external QR Generation dependencies.  
-It generates beautiful, scannable codes with full control over shapes, colours, gradients,  
-embedded logos, animated GIFs, Micro QR, and more.
+BetterQR is a powerful, pure-Python QR code generator that gives you complete creative control over your QR codes, all without external QR generation dependencies.
 
----
+<div align="center">
 
-## Features
-
-| Feature | Details |
-|---------|---------|
-| **Standard QR** | Versions 1–40, ECC L / M / Q / H |
-| **Micro QR** | All versions M1–M4 with correct auto-version selection |
-| **Module shapes** | square, circle, rounded, diamond, star, gapped, vertical\_bar, horizontal\_bar |
-| **Colours** | 6-char or 3-char hex (`#F00`), transparent background, separate finder colour |
-| **Gradients** | horizontal, vertical, diagonal, radial |
-| **Logo embedding** | square / rounded / circle shape, optional border, ratio 0.1–0.35 |
-| **Frames & labels** | simple, rounded, double, shadow, fancy; label above or below |
-| **Animations** | 10 GIF effects: shimmer, fade, scan, pulse, build, matrix, wave, blink, typewriter, rotate |
-| **Data helpers** | WiFi, VCard, MeCard, GeoLocation, SMS, Email, Phone, Crypto |
-| **Output formats** | PNG, JPG, SVG, GIF |
-| **CLI** | Full-featured command-line tool |
-
----
-<div style="text-align: center;">
-
-## Examples
+![BetterQR in action](public/image.png)
 
 </div>
 
-![Gallery](https://cdn.hackclub.com/019f66b9-6f53-71ef-ac25-5b19351a6ee2/image.png)
+## ✨ Try it out!
+
+Ready to create stunning QR codes? Get started with BetterQR today!
+
+[**Install BetterQR now!**](#installation)
+
+---
+
+## What makes BetterQR special?
+
+BetterQR isn't just another QR code generator; it's designed for flexibility and visual appeal. Here's what you can do:
+
+- **Multiple Designs:** Go beyond basic squares with custom module shapes like circles, rounded corners, diamonds, and stars.
+
+- **Vibrant Visuals:** Apply horizontal, vertical, diagonal, or radial gradients to your QR codes for a unique look.
+
+- **Logo Embedding:** Seamlessly embed your logo with adjustable ratios, shapes (square, rounded, circle), and optional borders.
+
+- **Animated Codes:** Bring your QR codes to life with 10 distinct GIF animation effects, including shimmer, fade, scan, and matrix.
+
+- **Pretty Frames:** Add stylish frames and labels above or below your QR code to guide users.
+
+- **Micro QR Support:** Generate compact Micro QR codes (M1-M4) for smaller data payloads.
+
+- **Smart Data Helpers:** Easily create QR codes for WiFi networks, vCards, MeCards, GeoLocations, SMS, Email, Phone numbers, and even Crypto addresses.
+
+- **Versatile Output:** Export your creations in PNG, JPG, PDF, SVG, or GIF formats.
+
+- **Command-Line Interface (CLI):** Utilize a full-featured command-line interface for quick generation and scripting.
+
+---
 
 ## Installation
+
+Getting started with BetterQR is straightforward. Simply install it using pip:
 
 ```bash
 pip install betterqr --upgrade
@@ -50,10 +58,12 @@ pip install betterqr --upgrade
 
 ---
 
-## Why BetterQR?
+## Why Choose BetterQR?
 
-| | BetterQR | `qrcode` | `segno` |
-|---|:---:|:---:|:---:|
+We believe in giving you maximum control and creativity. Here's how BetterQR stands out against other popular Python QR libraries:
+
+| Feature | BetterQR | `qrcode` | `segno` |
+| --- | --- | --- | --- |
 | Zero external QR-gen dependencies | ✅ | ✅ | ✅ |
 | Module shapes (circle, star, diamond, etc.) | ✅ | ❌ | ❌ |
 | Gradients | ✅ | ❌ | ❌ |
@@ -69,28 +79,30 @@ pip install betterqr --upgrade
 
 ## Quick Start
 
-### CLI
+Here are a few ways to quickly generate QR codes with BetterQR:
+
+### Command Line Interface (CLI)
 
 ```bash
 # Basic QR code
 betterqr "https://example.com" my_qr.png
 
-# Micro QR (auto-selects smallest version)
+# Micro QR (automatically selects the smallest version )
 betterqr "HELLO" --type micro micro.png
 
-# Styled with gradient
+# Styled with a radial gradient
 betterqr "Hello" my_qr.png --gradient "#FF6B6B" "#4ECDC4" --gradient-dir radial
 
-# With logo (use ECC H for logos)
+# With a logo (remember to use ECC H for best results with logos)
 betterqr "https://mysite.com" qr.png --logo logo.png --logo-ratio 0.3 --logo-shape rounded -e H
 
-# Animated GIF
+# Animated GIF with a matrix effect
 betterqr "Animated QR" animated.gif --effect matrix --fps 12
 
-# WiFi
+# WiFi connection QR
 betterqr --wifi MySSID MyPassword output.png
 
-# Contact
+# Contact information QR
 betterqr --contact "Jane Doe" --phone "+1-555-1234" --email "jane@example.com" contact.png
 ```
 
@@ -99,40 +111,40 @@ betterqr --contact "Jane Doe" --phone "+1-555-1234" --email "jane@example.com" c
 ```python
 from betterqr import QR, WiFi, VCard, GeoLocation, SMS, Email, Phone
 
-# Basic
-QR("https://example.com").save("qr.png")
+# Basic QR code
+QR("https://example.com" ).save("qr.png")
 
-# Micro QR — all versions
+# Micro QR — demonstrating different versions
 QR("1234",        qr_type="micro", version=1, ecc="M").save("m1.png")  # numeric only
 QR("HELLO WORLD", qr_type="micro", version=3, ecc="M").save("m3.png")  # alphanumeric
 QR("Hello!",      qr_type="micro", version=4, ecc="L").save("m4.png")  # byte mode
 
-# Styling
+# Styling with custom shapes and colors
 (QR("styled")
     .style(shape="circle", fill="#6C3082", back="#F3E8FF")
     .save("styled.png"))
 
-# 3-char hex works too
+# 3-character hex codes also work
 QR("x").style(fill="#000", back="#FFF").save("mono.png")
 
-# Gradient
+# Applying a radial gradient
 QR("gradient").gradient("#FF6B6B", "#4ECDC4", direction="radial").save("grad.png")
 
-# Logo (border=True adds a thin outline around the logo)
-(QR("https://mysite.com", ecc="H")
+# Embedding a logo with a rounded shape and border
+(QR("https://mysite.com", ecc="H" )
     .logo("logo.png", ratio=0.25, shape="rounded", border=True)
     .save("logo.png"))
 
-# Frame + label
-(QR("https://example.com")
+# Adding a fancy frame and a label
+(QR("https://example.com" )
     .frame("fancy")
     .label("Scan Me!", position="below")
     .save("framed.png"))
 
-# Animation
+# Creating an animated GIF
 QR("Hello", ecc="H", version=4).animate("matrix", frames=30, fps=15).save("anim.gif")
 
-# Data helpers — pass the helper directly or convert to string
+# Using data helpers for common information types
 QR(WiFi("MyNet", "MyPass", "WPA")).save("wifi.png")
 QR(GeoLocation(51.5074, -0.1278)).save("geo.png")
 QR(SMS("+15550199", "Hello!")).save("sms.png")
@@ -145,29 +157,40 @@ QR(VCard("Jane Doe", phone="+15550199", email="jane@example.com")).save("vcard.p
 
 ## Micro QR Capacities
 
+Micro QR codes are a compact alternative for smaller data sets. Here's a breakdown of their capacities:
+
 | Symbol | Size | Max Numeric | Max Alpha | Max Bytes |
-|--------|------|-------------|-----------|-----------|
-| M1/M   | 11×11 | 5          | —         | —         |
-| M2/L   | 13×13 | 10         | 6         | —         |
-| M2/M   | 13×13 | 8          | 5         | —         |
-| M3/L   | 15×15 | 23         | 14        | 9         |
-| M3/M   | 15×15 | 18         | 11        | 7         |
-| M4/L   | 17×17 | 35         | 21        | 15        |
-| M4/M   | 17×17 | 30         | 18        | 13        |
-| M4/Q   | 17×17 | 21         | 13        | 9         |
+| --- | --- | --- | --- | --- |
+| M1/M | 11×11 | 5 | — | — |
+| M2/L | 13×13 | 10 | 6 | — |
+| M2/M | 13×13 | 8 | 5 | — |
+| M3/L | 15×15 | 23 | 14 | 9 |
+| M3/M | 15×15 | 18 | 11 | 7 |
+| M4/L | 17×17 | 35 | 21 | 15 |
+| M4/M | 17×17 | 30 | 18 | 13 |
+| M4/Q | 17×17 | 21 | 13 | 9 |
 
 > [!NOTE]
-> Micro QR does not support ECC H. Use standard QR for logos.
-> Micro QR cannot be scanned using normal phone cameras
+> Micro QR does not support ECC H. Use standard QR for logos.Micro QR cannot be scanned using normal phone cameras.
 
 > [!TIP]
-> Use a dedicated [Micro QR Scanner](https://www.dynamsoft.com/barcode-reader/barcode-types/micro-qr-code/) to test the Micro QR codes
-
+> Use a dedicated [Micro QR Scanner](https://www.dynamsoft.com/barcode-reader/barcode-types/micro-qr-code/) to test Micro QR codes.
 
 ---
 
 ## Documentation
-Check out the [DOCUMENTATION](docs/DOCUMENTATION.md) for an better overview of BetterQR
+
+For a more in-depth understanding of BetterQR's capabilities and API, please refer to the [**full documentation**](docs/DOCUMENTATION.md).
+
+---
+
+## Credits & Acknowledgements
+
+BetterQR is a project by DevX-Dragon. I am![alt text](image.png) grateful for the inspiration and support from the open-source community.
+
+---
 
 ## License
-Regsitred under MIT LISCENSE — see [LICENSE](LICENSE)
+
+BetterQR is registered under the MIT License. See the [**LICENSE**](LICENSE) file for more details.
+
