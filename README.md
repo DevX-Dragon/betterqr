@@ -16,7 +16,7 @@ BetterQR is a powerful, pure-Python QR code generator that gives you complete cr
 
 </div>
 
-## ✨ Try it out!
+## Try it out!
 
 Ready to create stunning QR codes? Get started with BetterQR today!
 
