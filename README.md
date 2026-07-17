@@ -18,7 +18,7 @@ BetterQR is a powerful, pure-Python QR code generator that gives you complete cr
 
 ## Try it out!
 
-Ready to create stunning QR codes? Get started with BetterQR today!
+Ready to create beautiful QR codes? Get started with BetterQR today!
 
 [**Install BetterQR now!**](#installation)
 
@@ -36,9 +36,10 @@ BetterQR isn't just another QR code generator; it's designed for flexibility and
 
 - **Animated Codes:** Bring your QR codes to life with 10 distinct GIF animation effects, including shimmer, fade, scan, and matrix.
 
-- **Pretty Frames:** Add stylish frames and labels above or below your QR code to guide users.
+- **Pretty Frames:** Add stylish frames and labels above or below your QR codes. Perfect for review QR codes or payment
+QR codes
 
-- **Micro QR Support:** Generate compact Micro QR codes (M1-M4) for smaller data payloads.
+- **Micro QR Support:** Generate compact Micro QR codes (M1-M4) for smaller data payloads. Perfect for product labelling and other small data storing
 
 - **Smart Data Helpers:** Easily create QR codes for WiFi networks, vCards, MeCards, GeoLocations, SMS, Email, Phone numbers, and even Crypto addresses.
 
@@ -50,7 +51,7 @@ BetterQR isn't just another QR code generator; it's designed for flexibility and
 
 ## Installation
 
-Getting started with BetterQR is straightforward. Simply install it using pip:
+Getting started with BetterQR is very easy. Simply install it using pip:
 
 ```bash
 pip install betterqr --upgrade
@@ -60,7 +61,7 @@ pip install betterqr --upgrade
 
 ## Why Choose BetterQR?
 
-We believe in giving you maximum control and creativity. Here's how BetterQR stands out against other popular Python QR libraries:
+ Here's how BetterQR stands out against other popular Python QR libraries:
 
 | Feature | BetterQR | `qrcode` | `segno` |
 | --- | --- | --- | --- |
